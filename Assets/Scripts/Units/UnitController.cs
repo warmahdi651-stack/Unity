@@ -54,7 +54,7 @@ namespace RtsWarcraft
         Transform weaponArm;
         bool weaponLookedUp;
         Quaternion weaponBase;
-        float walkPhase, prevBob, swingAt = -10f;
+        float walkPhase, prevBob, swingAt = -10f, nextHammer;
         Vector3 prevAnimPos;
         ResourceNode assignedNode;
 
@@ -654,6 +654,7 @@ namespace RtsWarcraft
             else
             {
                 swingAt = Time.time;
+                Sfx.Play(Sfx.Swing);
                 target.TakeDamage(dmg, def.damageType, this);
                 CombatFx.MeleeImpact(target.Position);
             }
@@ -832,6 +833,7 @@ namespace RtsWarcraft
             }
 
             if (site.IsComplete) { Advance(); return; }
+            if (Time.time > nextHammer) { nextHammer = Time.time + 0.5f; Sfx.Play(Sfx.Build); }
 
             float reach = site.def.sizeZ * 0.6f + 1.8f;
             float dist = CombatMath.FlatDistance(transform.position, site.Position);

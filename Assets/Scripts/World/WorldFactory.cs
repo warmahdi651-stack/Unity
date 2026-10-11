@@ -44,6 +44,154 @@ namespace RtsWarcraft
         public static Transform FxRoot { get { return fxRoot != null ? fxRoot.transform : null; } }
 
         // ===================================================================
+        //  Kenney model loading (CC0): real low-poly meshes with a
+        //  procedural fallback when a model is missing.
+        // ===================================================================
+
+        static readonly Dictionary<string, GameObject> prefabCache = new Dictionary<string, GameObject>();
+
+        public static GameObject TryModel(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            GameObject p;
+            if (prefabCache.TryGetValue(name, out p)) return p;
+            p = Resources.Load<GameObject>("Models/" + name);
+            prefabCache[name] = p;
+            return p;
+        }
+
+        static Bounds Measure(GameObject go)
+        {
+            Renderer[] rs = go.GetComponentsInChildren<Renderer>();
+            Bounds b = new Bounds(go.transform.position, Vector3.zero);
+            for (int i = 0; i < rs.Length; i++)
+            {
+                if (i == 0) b = rs[i].bounds;
+                else b.Encapsulate(rs[i].bounds);
+            }
+            return b;
+        }
+
+        /// <summary>Instantiates a model scaled to a target height, feet on
+        ///  <paramref name="pos"/>, optionally tinted.</summary>
+        public static GameObject PlaceModel(Transform parent, string name, Vector3 pos, Quaternion rot,
+                                            float targetHeight, string objName, Color tint)
+        {
+            GameObject prefab = TryModel(name);
+            if (prefab == null) return null;
+            GameObject go = (GameObject)Object.Instantiate(prefab, parent);
+            go.name = objName;
+            go.transform.localPosition = pos;
+            go.transform.localRotation = rot;
+
+            Bounds b = Measure(go);
+            float s = targetHeight / Mathf.Max(0.01f, b.size.y);
+            go.transform.localScale = go.transform.localScale * s;
+            b = Measure(go);
+            Vector3 wp = parent.TransformPoint(pos);
+            go.transform.position += new Vector3(wp.x - b.center.x, wp.y - b.min.y, wp.z - b.center.z);
+
+            if (tint.a > 0f && tint != Color.white)
+            {
+                Renderer[] rs = go.GetComponentsInChildren<Renderer>();
+                for (int i = 0; i < rs.Length; i++)
+                {
+                    Material[] ms = rs[i].sharedMaterials;
+                    for (int j = 0; j < ms.Length; j++)
+                    {
+                        Material m = new Material(ms[j]);
+                        m.color = tint;
+                        ms[j] = m;
+                    }
+                    rs[i].sharedMaterials = ms;
+                }
+            }
+            return go;
+        }
+
+        /// <summary>Instantiates a model scaled so its X size matches
+        ///  <paramref name="fitWidth"/> world units.</summary>
+        public static GameObject PlaceModelFit(Transform parent, string name, float fitWidth, float baseWidth)
+        {
+            GameObject prefab = TryModel(name);
+            if (prefab == null) return null;
+            GameObject go = (GameObject)Object.Instantiate(prefab, parent);
+            go.name = "Model";
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+
+            float s = fitWidth / Mathf.Max(0.01f, baseWidth);
+            go.transform.localScale = go.transform.localScale * s;
+            Bounds b = Measure(go);
+            Vector3 wp = parent.position;
+            go.transform.position += new Vector3(wp.x - b.center.x, wp.y - b.min.y, wp.z - b.center.z);
+            return go;
+        }
+
+        static string UnitModelName(UnitId id)
+        {
+            switch (id)
+            {
+                case UnitId.Peasant: return "character-male-a";
+                case UnitId.Footman: return "character-male-b";
+                case UnitId.Archer: return "character-archer";
+                case UnitId.Knight: return "character-male-c";
+                case UnitId.Paladin: return "character-male-c";
+                case UnitId.Archmage: return "character-female-a";
+                case UnitId.Priest: return "character-male-d";
+                case UnitId.Sorceress: return "character-female-b";
+                case UnitId.Peon: return "character-male-b";
+                case UnitId.Grunt: return "character-male-d";
+                case UnitId.TrollAxethrower: return "character-archer";
+                case UnitId.Ogre: return "character-male-c";
+                case UnitId.Blademaster: return "character-male-a";
+                case UnitId.FarSeer: return "character-male-d";
+                default: return null;
+            }
+        }
+
+        static string BuildingModelName(BuildingId id)
+        {
+            switch (id)
+            {
+                case BuildingId.TownHall:
+                case BuildingId.GreatHall:
+                case BuildingId.Stronghold: return "town_hall";
+                case BuildingId.Farm:
+                case BuildingId.Burrow: return "farm";
+                case BuildingId.Barracks:
+                case BuildingId.TrollHut: return "barracks";
+                case BuildingId.LumberMill:
+                case BuildingId.WarMill: return "lumber_mill";
+                case BuildingId.Blacksmith: return "blacksmith";
+                case BuildingId.GuardTower:
+                case BuildingId.WatchTower: return "tower";
+                case BuildingId.AltarOfKings:
+                case BuildingId.AltarOfStorms: return "altar";
+                case BuildingId.ArcaneSanctum:
+                case BuildingId.SpiritLodge: return "sanctum";
+                default: return null;
+            }
+        }
+
+        static float ModelBaseWidth(BuildingId id)
+        {
+            switch (id)
+            {
+                case BuildingId.TownHall:
+                case BuildingId.GreatHall:
+                case BuildingId.Stronghold: return 5f;
+                case BuildingId.Barracks:
+                case BuildingId.TrollHut:
+                case BuildingId.LumberMill:
+                case BuildingId.WarMill: return 4f;
+                case BuildingId.GuardTower:
+                case BuildingId.WatchTower: return 2f;
+                default: return 3f;
+            }
+        }
+
+        // ===================================================================
         //  Materials
         // ===================================================================
 
@@ -548,21 +696,26 @@ namespace RtsWarcraft
                     go = new GameObject("GoldMine_" + i);
                     go.transform.SetParent(root.transform, false);
                     go.transform.position = p;
-                    Part(go.transform, goldMineMesh, rockMat, new Vector3(0f, 0.55f, 0f),
-                         Quaternion.Euler(0f, 18f, 0f), "Mound").transform.localScale =
-                        new Vector3(1.15f, 0.55f, 0.5f * 2.3f);
-                    Part(go.transform, goldMineMesh, rockMat, new Vector3(-0.7f, 0.35f, 0.5f),
-                         Quaternion.Euler(8f, 64f, 0f), "RockA").transform.localScale =
-                        new Vector3(0.5f, 0.4f, 0.5f);
-                    Part(go.transform, goldMineMesh, rockMat, new Vector3(0.8f, 0.3f, -0.4f),
-                         Quaternion.Euler(-6f, 120f, 0f), "RockB").transform.localScale =
-                        new Vector3(0.45f, 0.35f, 0.45f);
-                    Part(go.transform, nuggetMesh, goldMat, new Vector3(0.2f, 1.0f, 0.3f),
-                         Quaternion.Euler(20f, 30f, 0f), "NuggetA");
-                    Part(go.transform, nuggetMesh, goldMat, new Vector3(-0.5f, 0.8f, -0.4f),
-                         Quaternion.Euler(0f, 70f, 10f), "NuggetB");
-                    Part(go.transform, nuggetMesh, goldMat, new Vector3(0.6f, 0.75f, 0.6f),
-                         Quaternion.Euler(10f, 10f, 0f), "NuggetC");
+                    GameObject mineModel = PlaceModel(go.transform, "goldmine", Vector3.zero, Quaternion.identity,
+                                                      2.4f, "Model", Color.white);
+                    if (mineModel == null)
+                    {
+                        Part(go.transform, goldMineMesh, rockMat, new Vector3(0f, 0.55f, 0f),
+                             Quaternion.Euler(0f, 18f, 0f), "Mound").transform.localScale =
+                            new Vector3(1.15f, 0.55f, 0.5f * 2.3f);
+                        Part(go.transform, goldMineMesh, rockMat, new Vector3(-0.7f, 0.35f, 0.5f),
+                             Quaternion.Euler(8f, 64f, 0f), "RockA").transform.localScale =
+                            new Vector3(0.5f, 0.4f, 0.5f);
+                        Part(go.transform, goldMineMesh, rockMat, new Vector3(0.8f, 0.3f, -0.4f),
+                             Quaternion.Euler(-6f, 120f, 0f), "RockB").transform.localScale =
+                            new Vector3(0.45f, 0.35f, 0.45f);
+                        Part(go.transform, nuggetMesh, goldMat, new Vector3(0.2f, 1.0f, 0.3f),
+                             Quaternion.Euler(20f, 30f, 0f), "NuggetA");
+                        Part(go.transform, nuggetMesh, goldMat, new Vector3(-0.5f, 0.8f, -0.4f),
+                             Quaternion.Euler(0f, 70f, 10f), "NuggetB");
+                        Part(go.transform, nuggetMesh, goldMat, new Vector3(0.6f, 0.75f, 0.6f),
+                             Quaternion.Euler(10f, 10f, 0f), "NuggetC");
+                    }
                 }
                 else
                 {
@@ -573,10 +726,15 @@ namespace RtsWarcraft
                     float sc = 0.85f + (hv / 255f) * 0.45f;
                     go.transform.localScale = new Vector3(sc, sc * (0.9f + (((hv >> 3) & 31) / 31f) * 0.35f), sc);
                     go.transform.localRotation = Quaternion.Euler(0f, (hv * 7) % 360, 0f);
-                    Part(go.transform, treeTrunkMesh, trunkMat, Vector3.zero, Quaternion.identity, "Trunk");
-                    Material leaf = leafMats[hv % 3];
-                    Part(go.transform, treeLeafMesh, leaf, new Vector3(0f, 1.55f, 0f), Quaternion.identity, "LeavesLow");
-                    Part(go.transform, treeLeafTopMesh, leaf, new Vector3(0f, 2.6f, 0f), Quaternion.identity, "LeavesTop");
+                    GameObject treeModel = PlaceModel(go.transform, hv % 2 == 0 ? "tree" : "tree-high",
+                                                        Vector3.zero, Quaternion.identity, 2.6f, "Model", Color.white);
+                    if (treeModel == null)
+                    {
+                        Part(go.transform, treeTrunkMesh, trunkMat, Vector3.zero, Quaternion.identity, "Trunk");
+                        Material leaf = leafMats[hv % 3];
+                        Part(go.transform, treeLeafMesh, leaf, new Vector3(0f, 1.55f, 0f), Quaternion.identity, "LeavesLow");
+                        Part(go.transform, treeLeafTopMesh, leaf, new Vector3(0f, 2.6f, 0f), Quaternion.identity, "LeavesTop");
+                    }
                 }
 
                 SelectableMarker marker = go.AddComponent<SelectableMarker>();
@@ -600,6 +758,25 @@ namespace RtsWarcraft
             Color metal = new Color(0.62f, 0.64f, 0.70f);
 
             Vector3 s = def.visualScale;
+
+            GameObject model = PlaceModel(go.transform, UnitModelName(def.id), Vector3.zero, Quaternion.identity,
+                                          def.visualScale.y * (def.isHero ? 1.35f : 1.15f), "Model",
+                                          Color.Lerp(owner.color, Color.white, 0.6f));
+            if (model != null)
+            {
+                Part(go.transform, ConeMesh(s.x * 0.16f, s.y * 0.22f, 5), Solid(owner.color),
+                     new Vector3(0f, def.visualScale.y * (def.isHero ? 1.5f : 1.3f), 0f),
+                     Quaternion.identity, "Plume");
+                GameObject mRing = Part(go.transform, RingXZ(def.radius * 1.9f, def.radius * 1.55f),
+                                        Transparent(GameData.SelectionGreen),
+                                        new Vector3(0f, 0.06f, 0f), Quaternion.identity, "SelectionRing");
+                mRing.SetActive(false);
+                SphereCollider mCol = go.AddComponent<SphereCollider>();
+                mCol.isTrigger = true;
+                mCol.center = new Vector3(0f, s.y * 0.5f, 0f);
+                mCol.radius = Mathf.Max(def.radius, s.y * 0.5f);
+                return go;
+            }
 
             // Torso
             Part(go.transform, BoxMesh(new Vector3(s.x * 0.95f, s.y * 0.45f, s.z * 0.6f)), Solid(body),
@@ -688,6 +865,28 @@ namespace RtsWarcraft
             bool isTower = def.id == BuildingId.GuardTower || def.id == BuildingId.WatchTower;
             bool isHall = def.isResourceDropoff;
             bool isFarm = def.supplyProvided > 0;
+
+            GameObject bModel = PlaceModelFit(go.transform, BuildingModelName(id), w, ModelBaseWidth(id));
+            if (bModel != null)
+            {
+                float bRingR = Mathf.Max(w, d) * 0.62f;
+                GameObject bRing = Part(go.transform, RingXZ(bRingR, bRingR * 0.86f),
+                                        Transparent(GameData.SelectionGreen),
+                                        new Vector3(0f, 0.07f, 0f), Quaternion.identity, "SelectionRing");
+                bRing.SetActive(false);
+                GameObject bScaffold = Part(go.transform, BoxMesh(new Vector3(w * 1.15f, 0.12f, d * 1.15f)),
+                                            Transparent(new Color(1f, 1f, 1f, 0.35f)),
+                                            new Vector3(0f, 0.1f, 0f), Quaternion.identity, "Scaffold");
+                bScaffold.SetActive(false);
+                BoxCollider bCol = go.AddComponent<BoxCollider>();
+                bCol.center = new Vector3(0f, 1.6f, 0f);
+                bCol.size = new Vector3(w, 3.4f, d);
+                SelectableMarker bMarker = go.AddComponent<SelectableMarker>();
+                BuildingController bCtrl = go.AddComponent<BuildingController>();
+                bCtrl.Init(owner, id, def, origin, bRing, bScaffold);
+                bMarker.Init(bCtrl);
+                return bCtrl;
+            }
 
             if (isTower)
             {

@@ -276,3 +276,20 @@ than a structural one — the checks above are the strongest available offline.
   `float dt` per tick through `GameManager.gameSpeed`.
 * Real art: `WorldFactory` is the only place geometry is created, so swapping a
   procedural mesh for a prefab is a local change.
+
+### v1.5 - real 3D models & recorded sound (CC0)
+
+- Real low-poly 3D models by Kenney (CC0): characters for every unit,
+  modular medieval buildings composed offline into single meshes
+  (town hall with banners & corner pillars, barracks, farm with stall,
+  lumber mill with windmill, blacksmith, altar, sanctum, guard tower),
+  trees, rocks and a gold-mine rock pile with nuggets.
+  Procedural primitives remain as an automatic fallback.
+- Recorded CC0 sound effects (Kenney UI/RPG/Impact packs + artisticdude's
+  RPG Sound Pack via the Soundix collection): button clicks, harvest chops,
+  coin delivery, sword swings, metal impacts, bells, monster death, hammer
+  building ticks - synthesised versions kept as fallback.
+- HUD portraits now use Kenney's Medieval RTS sprite art per unit/building.
+- Assets converted from Kenney GLBs with Tools/glb2obj.py and composed with
+  Tools/compose_models.py (both kept in the repo).
+- Credits: Kenney (kenney.nl, CC0), artisticdude, ObsydianX collections.

@@ -590,7 +590,8 @@ namespace RtsWarcraft
             {
                 SetTitle(b.def.displayName,
                          b.IsComplete ? "Completed" : "Building " + Mathf.RoundToInt(b.buildProgress * 100f) + "%");
-                portraitImage.color = Color.Lerp(me.color, Color.white, 0.3f);
+                SetPortrait("medievalStructure_" + ((int)b.defId).ToString("00"),
+                            Color.Lerp(me.color, Color.white, 0.3f));
 
                 if (b.defId == BuildingId.Blacksmith && b.IsComplete)
                 {
@@ -661,7 +662,8 @@ namespace RtsWarcraft
                       (first.def.isHero ? "   Level " + first.level : "")
                     : "Enemy " + first.Owner.name;
                 SetTitle(title, sub);
-                portraitImage.color = Color.Lerp(first.Owner.color, Color.white, 0.35f);
+                SetPortrait("medievalUnit_" + ((int)first.defId).ToString("00"),
+                            Color.Lerp(first.Owner.color, Color.white, 0.35f));
 
                 if (own)
                 {
@@ -727,13 +729,14 @@ namespace RtsWarcraft
             {
                 SetTitle(sel.SelectedNode.kind == ResourceKind.Gold ? "Gold Mine" : "Trees",
                          sel.SelectedNode.amount + " remaining");
-                portraitImage.color = sel.SelectedNode.kind == ResourceKind.Gold
-                    ? new Color(1f, 0.85f, 0.3f) : new Color(0.3f, 0.7f, 0.3f);
+                SetPortrait(sel.SelectedNode.kind == ResourceKind.Gold ? "medievalStructure_05" : "medievalUnit_03",
+                            sel.SelectedNode.kind == ResourceKind.Gold
+                                ? new Color(1f, 0.85f, 0.3f) : new Color(0.3f, 0.7f, 0.3f));
             }
             else
             {
                 SetTitle("Warcraft RTS", "Drag to select  ·  Right-click to command");
-                portraitImage.color = new Color(0.18f, 0.20f, 0.28f);
+                SetPortrait(null, new Color(0.18f, 0.20f, 0.28f));
             }
 
             for (int i = 0; i < CardSlots; i++)
@@ -768,6 +771,28 @@ namespace RtsWarcraft
             }
 
             RebuildStrip();
+        }
+
+        void SetPortrait(string spriteName, Color fallback)
+        {
+            if (portraitImage == null) return;
+            Texture2D t = spriteName != null
+                ? Resources.Load<Texture2D>("Sprites/" + spriteName) : null;
+            if (t != null)
+            {
+                portraitImage.sprite = Sprite.Create(t, new Rect(0f, 0f, t.width, t.height),
+                                                     new Vector2(0.5f, 0.5f));
+                portraitImage.color = Color.white;
+                portraitImage.preserveAspect = true;
+                if (portraitGlyph != null) portraitGlyph.enabled = false;
+            }
+            else
+            {
+                portraitImage.sprite = null;
+                portraitImage.preserveAspect = false;
+                portraitImage.color = fallback;
+                if (portraitGlyph != null) portraitGlyph.enabled = true;
+            }
         }
 
         void SetTitle(string title, string subtitle)

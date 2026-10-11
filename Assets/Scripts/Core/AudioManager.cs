@@ -11,7 +11,7 @@ namespace RtsWarcraft
     public static class Sfx
     {
         static AudioSource src;
-        static AudioClip click, chop, coin, hit, death, chime, error;
+        static AudioClip click, chop, coin, hit, death, chime, error, swing, build;
         static float lastAt = -1f;
 
         public static void Init()
@@ -24,13 +24,22 @@ namespace RtsWarcraft
             src.playOnAwake = false;
             src.volume = 0.55f;
 
-            click = Tone("click", 0.07f, t => Mathf.Sin(6280f * t) * 0.40f * Mathf.Exp(-t * 60f));
-            chop  = Noise("chop", 0.12f, 900f, 45f);
-            coin  = Tone("coin", 0.14f, t => (Mathf.Sin(7400f * t) * 0.5f + Mathf.Sin(9800f * t) * 0.25f) * Mathf.Exp(-t * 22f));
-            hit   = Noise("hit", 0.16f, 500f, 30f);
-            death = Tone("death", 0.35f, t => Mathf.Sin((500f - 900f * t) * t * 6.28f) * 0.5f * Mathf.Exp(-t * 7f));
-            chime = Tone("chime", 0.50f, t => (Mathf.Sin(4140f * t) * 0.3f + Mathf.Sin(5540f * Mathf.Max(0f, t - 0.12f)) * 0.3f) * Mathf.Exp(-t * 5f));
-            error = Tone("error", 0.20f, t => Mathf.Sign(Mathf.Sin(1000f * t)) * 0.18f * Mathf.Exp(-t * 9f));
+            // Real recorded CC0 clips (Kenney / artisticdude) with the
+            // synthesised versions as an offline fallback.
+            click = Load("click") ?? Tone("click", 0.07f, t => Mathf.Sin(6280f * t) * 0.40f * Mathf.Exp(-t * 60f));
+            chop  = Load("chop") ?? Noise("chop", 0.12f, 900f, 45f);
+            coin  = Load("coin") ?? Tone("coin", 0.14f, t => (Mathf.Sin(7400f * t) * 0.5f + Mathf.Sin(9800f * t) * 0.25f) * Mathf.Exp(-t * 22f));
+            hit   = Load("hit") ?? Noise("hit", 0.16f, 500f, 30f);
+            death = Load("death") ?? Tone("death", 0.35f, t => Mathf.Sin((500f - 900f * t) * t * 6.28f) * 0.5f * Mathf.Exp(-t * 7f));
+            chime = Load("chime") ?? Tone("chime", 0.50f, t => (Mathf.Sin(4140f * t) * 0.3f + Mathf.Sin(5540f * Mathf.Max(0f, t - 0.12f)) * 0.3f) * Mathf.Exp(-t * 5f));
+            error = Load("error") ?? Tone("error", 0.20f, t => Mathf.Sign(Mathf.Sin(1000f * t)) * 0.18f * Mathf.Exp(-t * 9f));
+            swing = Load("swing");
+            build = Load("build");
+        }
+
+        static AudioClip Load(string name)
+        {
+            return Resources.Load<AudioClip>("Audio/" + name);
         }
 
         public static AudioClip Click { get { return click; } }
@@ -40,6 +49,8 @@ namespace RtsWarcraft
         public static AudioClip Death { get { return death; } }
         public static AudioClip Chime { get { return chime; } }
         public static AudioClip Error { get { return error; } }
+        public static AudioClip Swing { get { return swing; } }
+        public static AudioClip Build { get { return build; } }
 
         /// <summary>One-shots a cue with a tiny global throttle so battles do
         /// not stack into noise.</summary>

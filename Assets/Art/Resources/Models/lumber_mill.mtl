@@ -1,0 +1,7 @@
+newmtl tex
+Kd 1 1 1
+map_Kd colormap_ft.png
+
+newmtl wood
+Kd 0.350 0.240 0.140
+
