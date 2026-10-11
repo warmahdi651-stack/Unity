@@ -750,7 +750,7 @@ namespace RtsWarcraft
 
                 System.Action cb = a.onClick;
                 cardButtons[i].onClick.RemoveAllListeners();
-                cardButtons[i].onClick.AddListener(delegate { if (cb != null) cb(); });
+                cardButtons[i].onClick.AddListener(delegate { Sfx.Play(Sfx.Click); if (cb != null) cb(); });
 
                 EventTrigger tr = cardButtons[i].GetComponent<EventTrigger>();
                 if (tr == null) tr = cardButtons[i].gameObject.AddComponent<EventTrigger>();
@@ -820,6 +820,7 @@ namespace RtsWarcraft
             if (GameManager.I == null || GameManager.I.Map == null) return;
 
             RefreshClock();
+            RefreshCardBars();
             UpdateDragBox();
             UpdateHealthBars();
             UpdateFloating();
@@ -828,6 +829,38 @@ namespace RtsWarcraft
             RefreshCooldownOverlays();
             FadeMessages();
             RefreshPlacementSubtitle();
+        }
+
+        void RefreshCardBars()
+        {
+            if (hpFill == null) return;
+            float hp = 0f, mana = 0f;
+            bool hasMana = false;
+            if (GameManager.I != null && GameManager.I.Selection != null)
+            {
+                SelectionManager sel = GameManager.I.Selection;
+                if (sel.SelectedUnits.Count > 0)
+                {
+                    UnitController u = sel.SelectedUnits[0];
+                    hp = u.CurrentHp / Mathf.Max(1f, u.MaxHpValue);
+                    if (u.MaxMana > 0f) { hasMana = true; mana = u.mana / u.MaxMana; }
+                }
+                else if (sel.SelectedBuilding != null)
+                {
+                    BuildingController b = sel.SelectedBuilding;
+                    hp = b.CurrentHp / Mathf.Max(1f, b.MaxHpValue);
+                }
+            }
+            RectTransform hpRow = hpFill.parent as RectTransform;
+            float w = hpRow != null ? hpRow.rect.width : 170f;
+            hpFill.sizeDelta = new Vector2(Mathf.Max(0f, (w - 2f) * hp), 0f);
+            manaRow.gameObject.SetActive(hasMana);
+            if (hasMana)
+            {
+                RectTransform mRow = manaFill.parent as RectTransform;
+                float mw = mRow != null ? mRow.rect.width : 170f;
+                manaFill.sizeDelta = new Vector2(Mathf.Max(0f, (mw - 2f) * mana), 0f);
+            }
         }
 
         void RefreshClock()

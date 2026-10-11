@@ -161,8 +161,46 @@ namespace RtsWarcraft
                 Blot(upx, upy, u.def.isHero ? 2 : 1, uc);
             }
 
+            DrawViewRect();
+
             tex.SetPixels32(pixels);
             tex.Apply(false);
+        }
+
+        /// <summary>White rectangle showing the camera's current view.</summary>
+        void DrawViewRect()
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            float minX = 1e5f, minY = 1e5f, maxX = -1e5f, maxY = -1e5f;
+            bool any = false;
+            for (int i = 0; i < 4; i++)
+            {
+                Ray r = cam.ViewportPointToRay(new Vector3(i % 2, i / 2, 0f));
+                if (Mathf.Abs(r.direction.y) < 1e-4f) continue;
+                float t = -r.origin.y / r.direction.y;
+                if (t < 0f) continue;
+                Vector3 p = r.origin + r.direction * t;
+                int px, py;
+                MapPoint(p, out px, out py);
+                minX = Mathf.Min(minX, px); maxX = Mathf.Max(maxX, px);
+                minY = Mathf.Min(minY, py); maxY = Mathf.Max(maxY, py);
+                any = true;
+            }
+            if (!any) return;
+            int x0 = Mathf.Clamp((int)minX, 0, Pixels - 1), x1 = Mathf.Clamp((int)maxX, 0, Pixels - 1);
+            int y0 = Mathf.Clamp((int)minY, 0, Pixels - 1), y1 = Mathf.Clamp((int)maxY, 0, Pixels - 1);
+            Color32 c = new Color32(230, 230, 230, 255);
+            for (int x = x0; x <= x1; x++)
+            {
+                pixels[y0 * Pixels + x] = c;
+                pixels[y1 * Pixels + x] = c;
+            }
+            for (int y = y0; y <= y1; y++)
+            {
+                pixels[y * Pixels + x0] = c;
+                pixels[y * Pixels + x1] = c;
+            }
         }
 
         static Color32 To32(Color c)

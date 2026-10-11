@@ -74,6 +74,7 @@ namespace RtsWarcraft
         {
             buildProgress = 1f;
             hp = def.maxHp;
+            transform.localScale = Vector3.one;
             if (scaffold != null) scaffold.SetActive(false);
             owner.RecalcSupplyCap();
         }
@@ -85,6 +86,7 @@ namespace RtsWarcraft
             if (IsComplete || !alive) return;
             buildProgress = Mathf.Clamp01(buildProgress + amount);
             hp = def.maxHp * buildProgress;
+            transform.localScale = Vector3.one * (0.55f + 0.45f * buildProgress);
 
             if (buildProgress > 0.02f && scaffold != null) scaffold.SetActive(false);
 
@@ -94,6 +96,8 @@ namespace RtsWarcraft
                 owner.RecalcSupplyCap();
                 GameManager.I.Events.OnSupplyChanged();
                 CombatFx.BuildComplete(transform.position);
+                transform.localScale = Vector3.one;
+                Sfx.Play(Sfx.Chime);
                 if (owner.isHuman)
                     GameManager.I.Say(def.displayName + " construction complete.", Color.green);
             }
@@ -128,11 +132,13 @@ namespace RtsWarcraft
             if (!owner.CanAfford(ud.goldCost, ud.lumberCost))
             {
                 GameManager.I.Say("Not enough resources.", Color.red);
+                Sfx.Play(Sfx.Error);
                 return false;
             }
             if (owner.SupplyLeft < ud.supply)
             {
                 GameManager.I.Say("Need more farms!", new Color(1f, 0.6f, 0.2f));
+                Sfx.Play(Sfx.Error);
                 return false;
             }
 
@@ -229,6 +235,7 @@ namespace RtsWarcraft
             p.y = gm.Map.HeightAtWorld(p);
 
             UnitController u = gm.SpawnUnit(owner, ud.id, p);
+            Sfx.Play(Sfx.Chime);
             if (hasRallyPoint) u.IssueOrder(Order.Move(rallyPoint));
             CombatFx.SpawnPuff(p);
         }
@@ -284,6 +291,7 @@ namespace RtsWarcraft
             if (!alive) return;
             float dmg = CombatMath.CalculateDamage(amount, type, def.armor, true);
             hp -= dmg;
+            Sfx.Play(Sfx.Hit);
 
             if (!IsComplete)
             {
@@ -314,6 +322,7 @@ namespace RtsWarcraft
 
             GameManager.I.Map.SetOccupied(origin, def.sizeX, def.sizeZ, 0);
             CombatFx.BuildingCollapse(transform.position, owner.color);
+            Sfx.Play(Sfx.Death);
 
             if (selectionRing != null) selectionRing.SetActive(false);
             Renderer[] rs = GetComponentsInChildren<Renderer>();

@@ -41,6 +41,16 @@ That is the entire setup. The scene contains a single GameObject
 (`GameBootstrap`); at runtime it builds the camera, the sun, the 128×128 map,
 the resource nodes, both players, all systems and the whole interface.
 
+### v1.4 - feel & feedback pass
+
+- Synthesised sound effects (no audio files): button clicks, harvest chops,
+  gold delivery, combat impacts, deaths, training/construction chimes and
+  error buzzes - generated into AudioClips at startup.
+- Units now walk with a step bob and swing their weapon/staff/bow on attack.
+- Buildings grow in while under construction.
+- The unit card's HP/mana bars are live (the old empty maroon bar is gone).
+- Minimap shows a white rectangle around the camera's current view.
+
 ### v1.3 - graphics & polish pass
 
 - Real water plane with an animated shader, gradient sky dome, warm sun +

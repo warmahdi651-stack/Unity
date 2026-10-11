@@ -92,6 +92,7 @@ namespace RtsWarcraft
             WorldFactory.BuildTerrain(Map);
             WorldFactory.BuildWater(Map);
             WorldFactory.BuildSky();
+            Sfx.Init();
             WorldFactory.BuildResourceNodes(Map);
 
             CameraRig = RTSGameUtility.Add<RTSCameraController>(gameObject);

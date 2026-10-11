@@ -49,6 +49,13 @@ namespace RtsWarcraft
         public int carried;
         public ResourceKind carriedKind;
         float harvestProgress;
+
+        // Procedural animation state.
+        Transform weaponArm;
+        bool weaponLookedUp;
+        Quaternion weaponBase;
+        float walkPhase, prevBob, swingAt = -10f;
+        Vector3 prevAnimPos;
         ResourceNode assignedNode;
 
         // ---- build ----
@@ -459,6 +466,43 @@ namespace RtsWarcraft
                     TickIdle(dt);
                     break;
             }
+
+            Animate(dt);
+        }
+
+        void Animate(float dt)
+        {
+            if (!weaponLookedUp)
+            {
+                weaponLookedUp = true;
+                weaponArm = transform.Find("Weapon");
+                if (weaponArm == null) weaponArm = transform.Find("Bow");
+                if (weaponArm == null) weaponArm = transform.Find("Staff");
+                if (weaponArm != null) weaponBase = weaponArm.localRotation;
+                prevAnimPos = transform.position;
+            }
+
+            float moved = Vector3.Distance(transform.position, prevAnimPos);
+            prevAnimPos = transform.position;
+            bool walking = moved > 0.0008f;
+            if (walking) walkPhase += moved * 4f;
+            float bob = walking ? Mathf.Abs(Mathf.Sin(walkPhase)) * 0.09f : 0f;
+            transform.position += Vector3.up * (bob - prevBob);
+            prevBob = bob;
+
+            if (weaponArm != null)
+            {
+                float s = (Time.time - swingAt) / 0.28f;
+                if (s >= 0f && s <= 1f)
+                {
+                    float k = Mathf.Sin(s * Mathf.PI);
+                    weaponArm.localRotation = weaponBase * Quaternion.Euler(-80f * k, 0f, 0f);
+                }
+                else
+                {
+                    weaponArm.localRotation = weaponBase;
+                }
+            }
         }
 
         void Regen(float dt)
@@ -604,10 +648,12 @@ namespace RtsWarcraft
 
             if (def.rangedAttack && def.projectileSpeed > 0f)
             {
+                swingAt = Time.time;
                 ProjectileController.Launch(this, target, dmg, def.damageType, def.projectileSpeed);
             }
             else
             {
+                swingAt = Time.time;
                 target.TakeDamage(dmg, def.damageType, this);
                 CombatFx.MeleeImpact(target.Position);
             }
@@ -692,6 +738,7 @@ namespace RtsWarcraft
             if (harvestProgress >= def.harvestTime)
             {
                 harvestProgress = 0f;
+                Sfx.Play(Sfx.Chop);
                 int take = Mathf.Min(def.carryCapacity, n.amount);
                 n.amount -= take;
                 carried += take;
@@ -732,11 +779,13 @@ namespace RtsWarcraft
             if (carriedKind == ResourceKind.Gold)
             {
                 owner.gold += carried;
+                Sfx.Play(Sfx.Coin);
                 owner.totalGoldGathered += carried;
             }
             else
             {
                 owner.lumber += carried;
+                Sfx.Play(Sfx.Chop);
                 owner.totalLumberGathered += carried;
             }
             FloatingText.Spawn(transform.position + Vector3.up * 2f, "+" + carried,
@@ -859,6 +908,7 @@ namespace RtsWarcraft
 
             float dmg = CombatMath.CalculateDamage(amount, type, def.armor, false);
             hp -= dmg;
+            Sfx.Play(Sfx.Hit);
 
             FloatingText.Spawn(transform.position + Vector3.up * (def.visualScale.y + 0.4f),
                                Mathf.RoundToInt(dmg).ToString(), new Color(1f, 0.85f, 0.7f));
@@ -888,6 +938,7 @@ namespace RtsWarcraft
             if (def.isHero) GrantXpToNearbyHeroes(owner == GameManager.I.Human ? GameManager.I.Enemy : GameManager.I.Human);
 
             CombatFx.DeathPuff(transform.position, owner.color);
+            Sfx.Play(Sfx.Death);
             if (selectionRing != null) selectionRing.gameObject.SetActive(false);
 
             if (bodyRenderers != null)
