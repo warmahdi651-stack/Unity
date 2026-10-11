@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RtsWarcraft
@@ -40,6 +41,15 @@ namespace RtsWarcraft
             scaler.referenceResolution = new Vector2(1600f, 900f);
             scaler.matchWidthOrHeight = 0.5f;
             go.AddComponent<GraphicRaycaster>();
+
+            // Buttons are uGUI: without an EventSystem no click ever lands.
+            // (HUDController creates one too, but the menu exists before the HUD.)
+            if (EventSystem.current == null)
+            {
+                GameObject es = new GameObject("EventSystem");
+                es.AddComponent<EventSystem>();
+                es.AddComponent<StandaloneInputModule>();
+            }
 
             BuildMenu();
         }

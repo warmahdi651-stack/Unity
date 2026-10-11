@@ -53,7 +53,7 @@ namespace RtsWarcraft
             long g = (long)(c.g * 255f) << 32;
             long b = (long)(c.b * 255f) << 24;
             long a = (long)(c.a * 255f) << 16;
-            return r | g | b | a | (flags & 0xFFFF);
+            return r | g | b | a | ((long)flags & 0xFFFF);
         }
 
         /// <summary>Opaque, cached standard material.</summary>

@@ -41,6 +41,24 @@ That is the entire setup. The scene contains a single GameObject
 (`GameBootstrap`); at runtime it builds the camera, the sun, the 128×128 map,
 the resource nodes, both players, all systems and the whole interface.
 
+### Copying into a project created in Unity Hub
+
+You do **not** need the *3D Mobile* template — a template only decides the
+*initial* files, and this zip already ships every file the game needs
+(including Android player settings).  Android support comes from the
+**Android Build Support module**, not from a template.
+
+If you still prefer to create an empty project in Hub first:
+
+1. In Hub choose the **3D (Built-In Render Pipeline)** template (my shaders are
+   written for the built-in pipeline).  *3D Mobile* also works, but it enables
+   the new Input System and URP, so step 3 must overwrite those settings.
+2. Create the project anywhere, then **close Unity**.
+3. In the project folder **replace** these three folders with the ones from the
+   zip: `Assets/`, `Packages/`, `ProjectSettings/`.  Delete the template's
+   versions first - do not merge.
+4. Open the project in Hub again, open `Assets/Scenes/Main.unity`, press Play.
+
 ### If something goes wrong
 
 | Symptom | Fix |
