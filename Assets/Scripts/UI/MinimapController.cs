@@ -34,6 +34,8 @@ namespace RtsWarcraft
             panel.sizeDelta = new Vector2(Pixels + 8f, Pixels + 8f);
             panel.anchoredPosition = new Vector2(10f, 10f);
 
+            panel.localScale = new Vector3(1.25f, 1.25f, 1.25f);
+
             image = go.GetComponent<RawImage>();
             image.raycastTarget = true;
 

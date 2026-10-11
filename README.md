@@ -306,3 +306,14 @@ than a structural one — the checks above are the strongest available offline.
   hides whenever no mouse button is held.
 - Trees tinted to a deeper forest green; faction tint on characters is
   subtler so models keep their painted look.
+
+### v1.7 - flooded base, untextured models, small UI fixes
+
+- Starting plateaus are now forced to height >= 1.2 (well above the water
+  line, which was also lowered to 0.26) - no more underwater bases.
+- OBJ model materials get their colormap assigned at runtime when the
+  importer left them untextured (white/pink buildings are gone); the
+  Quaternius character skin textures ship next to their FBX files.
+- UI scaled up: canvas reference resolution 1280x720, minimap 25% larger.
+- The HP/mana rows on the command card hide when nothing is selected (the
+  stray dark bar is gone).

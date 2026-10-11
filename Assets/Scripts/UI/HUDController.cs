@@ -27,6 +27,7 @@ namespace RtsWarcraft
         Text cardTitle, cardSubtitle;
         Image portraitImage;
         Text portraitGlyph;
+        RectTransform barsPanel;
         RectTransform hpFill, manaFill, manaRow;
         readonly List<Button> cardButtons = new List<Button>();
         readonly List<Image> cardIcons = new List<Image>();
@@ -129,7 +130,7 @@ namespace RtsWarcraft
 
             CanvasScaler scaler = go.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1600f, 900f);
+            scaler.referenceResolution = new Vector2(1280f, 720f);
             scaler.matchWidthOrHeight = 0.5f;
 
             raycaster = go.AddComponent<GraphicRaycaster>();
@@ -273,6 +274,7 @@ namespace RtsWarcraft
             // ---------- health / mana ----------
             RectTransform bars = NewPanel("Bars", card, new Vector2(0f, 0f), new Vector2(0f, 1f),
                                           new Vector2(164f, 96f), new Vector2(336f, 160f));
+            barsPanel = bars;
 
             RectTransform hpRow = NewPanel("HPRow", bars, new Vector2(0f, 1f), new Vector2(1f, 1f),
                                            Vector2.zero, Vector2.zero);
@@ -860,7 +862,7 @@ namespace RtsWarcraft
         {
             if (hpFill == null) return;
             float hp = 0f, mana = 0f;
-            bool hasMana = false;
+            bool hasMana = false, any = false;
             if (GameManager.I != null && GameManager.I.Selection != null)
             {
                 SelectionManager sel = GameManager.I.Selection;
@@ -869,13 +871,17 @@ namespace RtsWarcraft
                     UnitController u = sel.SelectedUnits[0];
                     hp = u.CurrentHp / Mathf.Max(1f, u.MaxHpValue);
                     if (u.MaxMana > 0f) { hasMana = true; mana = u.mana / u.MaxMana; }
+                    any = true;
                 }
                 else if (sel.SelectedBuilding != null)
                 {
                     BuildingController b = sel.SelectedBuilding;
                     hp = b.CurrentHp / Mathf.Max(1f, b.MaxHpValue);
+                    any = true;
                 }
             }
+            if (barsPanel != null) barsPanel.gameObject.SetActive(any);
+            if (!any) return;
             RectTransform hpRow = hpFill.parent as RectTransform;
             float w = hpRow != null ? hpRow.rect.width : 170f;
             hpFill.sizeDelta = new Vector2(Mathf.Max(0f, (w - 2f) * hp), 0f);

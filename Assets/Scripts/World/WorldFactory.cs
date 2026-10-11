@@ -60,6 +60,37 @@ namespace RtsWarcraft
             return p;
         }
 
+        static readonly Dictionary<string, Texture> texCache = new Dictionary<string, Texture>();
+
+        static Texture LoadTex(string name)
+        {
+            Texture t;
+            if (texCache.TryGetValue(name, out t)) return t;
+            t = Resources.Load<Texture>("Models/" + name);
+            texCache[name] = t;
+            return t;
+        }
+
+        static void FixMaterials(GameObject go, Color tint, string texName)
+        {
+            Texture tex = texName != null ? LoadTex(texName) : null;
+            bool wantTint = tint != Color.white;
+            if (!wantTint && tex == null) return;
+            Renderer[] rs = go.GetComponentsInChildren<Renderer>();
+            for (int i = 0; i < rs.Length; i++)
+            {
+                Material[] ms = rs[i].sharedMaterials;
+                for (int j = 0; j < ms.Length; j++)
+                {
+                    Material m = new Material(ms[j]);
+                    if (wantTint) m.color = tint;
+                    if (m.mainTexture == null && tex != null) m.mainTexture = tex;
+                    ms[j] = m;
+                }
+                rs[i].sharedMaterials = ms;
+            }
+        }
+
         static Bounds Measure(GameObject go)
         {
             Renderer[] rs = go.GetComponentsInChildren<Renderer>();
@@ -75,7 +106,7 @@ namespace RtsWarcraft
         /// <summary>Instantiates a model scaled to a target height, feet on
         ///  <paramref name="pos"/>, optionally tinted.</summary>
         public static GameObject PlaceModel(Transform parent, string name, Vector3 pos, Quaternion rot,
-                                            float targetHeight, string objName, Color tint)
+                                            float targetHeight, string objName, Color tint, string tex = null)
         {
             GameObject prefab = TryModel(name);
             if (prefab == null) return null;
@@ -91,27 +122,14 @@ namespace RtsWarcraft
             Vector3 wp = parent.TransformPoint(pos);
             go.transform.position += new Vector3(wp.x - b.center.x, wp.y - b.min.y, wp.z - b.center.z);
 
-            if (tint.a > 0f && tint != Color.white)
-            {
-                Renderer[] rs = go.GetComponentsInChildren<Renderer>();
-                for (int i = 0; i < rs.Length; i++)
-                {
-                    Material[] ms = rs[i].sharedMaterials;
-                    for (int j = 0; j < ms.Length; j++)
-                    {
-                        Material m = new Material(ms[j]);
-                        m.color = tint;
-                        ms[j] = m;
-                    }
-                    rs[i].sharedMaterials = ms;
-                }
-            }
+            FixMaterials(go, tint, tex);
             return go;
         }
 
         /// <summary>Instantiates a model scaled so its X size matches
         ///  <paramref name="fitWidth"/> world units.</summary>
-        public static GameObject PlaceModelFit(Transform parent, string name, float fitWidth, float baseWidth)
+        public static GameObject PlaceModelFit(Transform parent, string name, float fitWidth, float baseWidth,
+                                               string tex = null)
         {
             GameObject prefab = TryModel(name);
             if (prefab == null) return null;
@@ -125,6 +143,7 @@ namespace RtsWarcraft
             Bounds b = Measure(go);
             Vector3 wp = parent.position;
             go.transform.position += new Vector3(wp.x - b.center.x, wp.y - b.min.y, wp.z - b.center.z);
+            FixMaterials(go, Color.white, tex);
             return go;
         }
 
@@ -632,7 +651,7 @@ namespace RtsWarcraft
             m.renderQueue = 3000;
             mr.sharedMaterial = m;
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            go.transform.position = new Vector3(0f, 0.34f, 0f);
+            go.transform.position = new Vector3(0f, 0.26f, 0f);
         }
 
         static Material terrainMat;
@@ -697,7 +716,7 @@ namespace RtsWarcraft
                     go.transform.SetParent(root.transform, false);
                     go.transform.position = p;
                     GameObject mineModel = PlaceModel(go.transform, "goldmine", Vector3.zero, Quaternion.identity,
-                                                      2.4f, "Model", Color.white);
+                                                      2.4f, "Model", Color.white, "colormap_ft");
                     if (mineModel == null)
                     {
                         Part(go.transform, goldMineMesh, rockMat, new Vector3(0f, 0.55f, 0f),
@@ -728,7 +747,7 @@ namespace RtsWarcraft
                     go.transform.localRotation = Quaternion.Euler(0f, (hv * 7) % 360, 0f);
                     GameObject treeModel = PlaceModel(go.transform, hv % 2 == 0 ? "tree" : "tree-high",
                                                         Vector3.zero, Quaternion.identity, 2.6f, "Model",
-                                                        new Color(0.55f, 0.78f, 0.52f));
+                                                        new Color(0.55f, 0.78f, 0.52f), "colormap_mf");
                     if (treeModel == null)
                     {
                         Part(go.transform, treeTrunkMesh, trunkMat, Vector3.zero, Quaternion.identity, "Trunk");
@@ -870,7 +889,7 @@ namespace RtsWarcraft
             bool isHall = def.isResourceDropoff;
             bool isFarm = def.supplyProvided > 0;
 
-            GameObject bModel = PlaceModelFit(go.transform, BuildingModelName(id), w, ModelBaseWidth(id));
+            GameObject bModel = PlaceModelFit(go.transform, BuildingModelName(id), w, ModelBaseWidth(id), "colormap_ft");
             if (bModel != null)
             {
                 float bRingR = Mathf.Max(w, d) * 0.62f;

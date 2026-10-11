@@ -126,7 +126,8 @@ namespace RtsWarcraft
 
         void FlattenArea(Vector2Int center, int radius)
         {
-            float h = HeightAt(center.x, center.y);
+            // Force the starting yard well above the water line.
+            float h = Mathf.Max(HeightAt(center.x, center.y), 1.2f);
             for (int z = center.y - radius; z <= center.y + radius; z++)
             {
                 for (int x = center.x - radius; x <= center.x + radius; x++)
