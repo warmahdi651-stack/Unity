@@ -907,7 +907,8 @@ namespace RtsWarcraft
         void UpdateDragBox()
         {
             SelectionManager sel = GameManager.I.Selection;
-            if (!sel.IsDragging)
+            bool held = Input.GetMouseButton(0) || Input.GetMouseButton(1);
+            if (!sel.IsDragging || !held)
             {
                 if (dragBox.gameObject.activeSelf) dragBox.gameObject.SetActive(false);
                 return;

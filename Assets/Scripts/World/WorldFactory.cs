@@ -132,20 +132,20 @@ namespace RtsWarcraft
         {
             switch (id)
             {
-                case UnitId.Peasant: return "character-male-a";
-                case UnitId.Footman: return "character-male-b";
-                case UnitId.Archer: return "character-archer";
-                case UnitId.Knight: return "character-male-c";
-                case UnitId.Paladin: return "character-male-c";
-                case UnitId.Archmage: return "character-female-a";
-                case UnitId.Priest: return "character-male-d";
-                case UnitId.Sorceress: return "character-female-b";
-                case UnitId.Peon: return "character-male-b";
-                case UnitId.Grunt: return "character-male-d";
-                case UnitId.TrollAxethrower: return "character-archer";
-                case UnitId.Ogre: return "character-male-c";
-                case UnitId.Blademaster: return "character-male-a";
-                case UnitId.FarSeer: return "character-male-d";
+                case UnitId.Peasant: return "man";
+                case UnitId.Footman: return "knight";
+                case UnitId.Archer: return "man";
+                case UnitId.Knight: return "knight";
+                case UnitId.Paladin: return "knight";
+                case UnitId.Archmage: return "woman";
+                case UnitId.Priest: return "man";
+                case UnitId.Sorceress: return "woman";
+                case UnitId.Peon: return "man";
+                case UnitId.Grunt: return "knight";
+                case UnitId.TrollAxethrower: return "man";
+                case UnitId.Ogre: return "knight";
+                case UnitId.Blademaster: return "knight";
+                case UnitId.FarSeer: return "woman";
                 default: return null;
             }
         }
@@ -164,12 +164,12 @@ namespace RtsWarcraft
                 case BuildingId.LumberMill:
                 case BuildingId.WarMill: return "lumber_mill";
                 case BuildingId.Blacksmith: return "blacksmith";
-                case BuildingId.GuardTower:
-                case BuildingId.WatchTower: return "tower";
+                case BuildingId.GuardTower: return "watchtower";
+                case BuildingId.WatchTower: return "watchtower";
                 case BuildingId.AltarOfKings:
                 case BuildingId.AltarOfStorms: return "altar";
                 case BuildingId.ArcaneSanctum:
-                case BuildingId.SpiritLodge: return "sanctum";
+                case BuildingId.SpiritLodge: return "pointytower";
                 default: return null;
             }
         }
@@ -186,7 +186,7 @@ namespace RtsWarcraft
                 case BuildingId.LumberMill:
                 case BuildingId.WarMill: return 4f;
                 case BuildingId.GuardTower:
-                case BuildingId.WatchTower: return 2f;
+                case BuildingId.WatchTower: return 3f;
                 default: return 3f;
             }
         }
@@ -727,7 +727,8 @@ namespace RtsWarcraft
                     go.transform.localScale = new Vector3(sc, sc * (0.9f + (((hv >> 3) & 31) / 31f) * 0.35f), sc);
                     go.transform.localRotation = Quaternion.Euler(0f, (hv * 7) % 360, 0f);
                     GameObject treeModel = PlaceModel(go.transform, hv % 2 == 0 ? "tree" : "tree-high",
-                                                        Vector3.zero, Quaternion.identity, 2.6f, "Model", Color.white);
+                                                        Vector3.zero, Quaternion.identity, 2.6f, "Model",
+                                                        new Color(0.55f, 0.78f, 0.52f));
                     if (treeModel == null)
                     {
                         Part(go.transform, treeTrunkMesh, trunkMat, Vector3.zero, Quaternion.identity, "Trunk");
@@ -761,9 +762,12 @@ namespace RtsWarcraft
 
             GameObject model = PlaceModel(go.transform, UnitModelName(def.id), Vector3.zero, Quaternion.identity,
                                           def.visualScale.y * (def.isHero ? 1.35f : 1.15f), "Model",
-                                          Color.Lerp(owner.color, Color.white, 0.6f));
+                                          Color.Lerp(owner.color, Color.white, 0.85f));
             if (model != null)
             {
+                RtsAnimator ra = model.AddComponent<RtsAnimator>();
+                ra.Init(UnitModelName(def.id));
+
                 Part(go.transform, ConeMesh(s.x * 0.16f, s.y * 0.22f, 5), Solid(owner.color),
                      new Vector3(0f, def.visualScale.y * (def.isHero ? 1.5f : 1.3f), 0f),
                      Quaternion.identity, "Plume");

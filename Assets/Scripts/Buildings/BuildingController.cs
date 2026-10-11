@@ -291,7 +291,7 @@ namespace RtsWarcraft
             if (!alive) return;
             float dmg = CombatMath.CalculateDamage(amount, type, def.armor, true);
             hp -= dmg;
-            Sfx.Play(Sfx.Hit);
+            Sfx.PlayAt(Sfx.Hit, transform.position);
 
             if (!IsComplete)
             {
@@ -322,7 +322,7 @@ namespace RtsWarcraft
 
             GameManager.I.Map.SetOccupied(origin, def.sizeX, def.sizeZ, 0);
             CombatFx.BuildingCollapse(transform.position, owner.color);
-            Sfx.Play(Sfx.Death);
+            Sfx.PlayAt(Sfx.Death, transform.position);
 
             if (selectionRing != null) selectionRing.SetActive(false);
             Renderer[] rs = GetComponentsInChildren<Renderer>();

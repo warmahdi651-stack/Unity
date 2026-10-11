@@ -293,3 +293,16 @@ than a structural one — the checks above are the strongest available offline.
 - Assets converted from Kenney GLBs with Tools/glb2obj.py and composed with
   Tools/compose_models.py (both kept in the repo).
 - Credits: Kenney (kenney.nl, CC0), artisticdude, ObsydianX collections.
+
+### v1.6 - animated heroes, distance-based audio, fixes
+
+- Units are now RIGGED ANIMATED characters (Quaternius, CC0): armoured
+  knight for fighters, clothed man for workers/archers/priests, woman for
+  casters. RtsAnimator plays walk/idle/attack/death clips automatically.
+- Guard towers use Quaternius' medieval WatchTower/PointyTower meshes.
+- Audio is distance-attenuated: battles far across the map no longer fill
+  your speakers (PlayAt with 38-unit falloff).
+- Fixed: the selection drag box could remain stuck on screen; it now also
+  hides whenever no mouse button is held.
+- Trees tinted to a deeper forest green; faction tint on characters is
+  subtler so models keep their painted look.

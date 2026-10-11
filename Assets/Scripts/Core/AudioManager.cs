@@ -62,6 +62,24 @@ namespace RtsWarcraft
             src.PlayOneShot(c);
         }
 
+        /// <summary>World cues fade with distance so a battle on the other
+        ///  side of the map does not fill your speakers.</summary>
+        public static void PlayAt(AudioClip c, Vector3 pos, float maxDist = 38f)
+        {
+            if (src == null || c == null) return;
+            Camera cam = Camera.main;
+            if (cam != null)
+            {
+                float d = Vector3.Distance(cam.transform.position, pos);
+                if (d > maxDist) return;
+                if (Time.time - lastAt < 0.03f) return;
+                lastAt = Time.time;
+                src.PlayOneShot(c, Mathf.Clamp01(1f - d / maxDist) * 0.9f + 0.1f);
+                return;
+            }
+            Play(c);
+        }
+
         // ===================================================================
 
         static AudioClip Tone(string name, float len, System.Func<float, float> gen)

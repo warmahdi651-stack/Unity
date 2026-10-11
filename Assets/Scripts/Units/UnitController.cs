@@ -55,6 +55,7 @@ namespace RtsWarcraft
         bool weaponLookedUp;
         Quaternion weaponBase;
         float walkPhase, prevBob, swingAt = -10f, nextHammer;
+        RtsAnimator ranim;
         Vector3 prevAnimPos;
         ResourceNode assignedNode;
 
@@ -141,6 +142,7 @@ namespace RtsWarcraft
             def = d;
             hp = MaxHp;
             mana = 0f;
+            ranim = GetComponentInChildren<RtsAnimator>();
 
             if (def.isHero)
             {
@@ -485,8 +487,9 @@ namespace RtsWarcraft
             float moved = Vector3.Distance(transform.position, prevAnimPos);
             prevAnimPos = transform.position;
             bool walking = moved > 0.0008f;
+            if (ranim != null) ranim.SetWalking(walking);
             if (walking) walkPhase += moved * 4f;
-            float bob = walking ? Mathf.Abs(Mathf.Sin(walkPhase)) * 0.09f : 0f;
+            float bob = walking && ranim == null ? Mathf.Abs(Mathf.Sin(walkPhase)) * 0.09f : 0f;
             transform.position += Vector3.up * (bob - prevBob);
             prevBob = bob;
 
@@ -649,12 +652,14 @@ namespace RtsWarcraft
             if (def.rangedAttack && def.projectileSpeed > 0f)
             {
                 swingAt = Time.time;
+                if (ranim != null) ranim.TriggerAttack();
                 ProjectileController.Launch(this, target, dmg, def.damageType, def.projectileSpeed);
             }
             else
             {
                 swingAt = Time.time;
-                Sfx.Play(Sfx.Swing);
+                Sfx.PlayAt(Sfx.Swing, transform.position);
+                if (ranim != null) ranim.TriggerAttack();
                 target.TakeDamage(dmg, def.damageType, this);
                 CombatFx.MeleeImpact(target.Position);
             }
@@ -739,7 +744,7 @@ namespace RtsWarcraft
             if (harvestProgress >= def.harvestTime)
             {
                 harvestProgress = 0f;
-                Sfx.Play(Sfx.Chop);
+                Sfx.PlayAt(Sfx.Chop, transform.position);
                 int take = Mathf.Min(def.carryCapacity, n.amount);
                 n.amount -= take;
                 carried += take;
@@ -780,13 +785,13 @@ namespace RtsWarcraft
             if (carriedKind == ResourceKind.Gold)
             {
                 owner.gold += carried;
-                Sfx.Play(Sfx.Coin);
+                Sfx.PlayAt(Sfx.Coin, transform.position);
                 owner.totalGoldGathered += carried;
             }
             else
             {
                 owner.lumber += carried;
-                Sfx.Play(Sfx.Chop);
+                Sfx.PlayAt(Sfx.Chop, transform.position);
                 owner.totalLumberGathered += carried;
             }
             FloatingText.Spawn(transform.position + Vector3.up * 2f, "+" + carried,
@@ -833,7 +838,7 @@ namespace RtsWarcraft
             }
 
             if (site.IsComplete) { Advance(); return; }
-            if (Time.time > nextHammer) { nextHammer = Time.time + 0.5f; Sfx.Play(Sfx.Build); }
+            if (Time.time > nextHammer) { nextHammer = Time.time + 0.5f; Sfx.PlayAt(Sfx.Build, transform.position); }
 
             float reach = site.def.sizeZ * 0.6f + 1.8f;
             float dist = CombatMath.FlatDistance(transform.position, site.Position);
@@ -910,7 +915,7 @@ namespace RtsWarcraft
 
             float dmg = CombatMath.CalculateDamage(amount, type, def.armor, false);
             hp -= dmg;
-            Sfx.Play(Sfx.Hit);
+            Sfx.PlayAt(Sfx.Hit, transform.position);
 
             FloatingText.Spawn(transform.position + Vector3.up * (def.visualScale.y + 0.4f),
                                Mathf.RoundToInt(dmg).ToString(), new Color(1f, 0.85f, 0.7f));
@@ -940,7 +945,8 @@ namespace RtsWarcraft
             if (def.isHero) GrantXpToNearbyHeroes(owner == GameManager.I.Human ? GameManager.I.Enemy : GameManager.I.Human);
 
             CombatFx.DeathPuff(transform.position, owner.color);
-            Sfx.Play(Sfx.Death);
+            Sfx.PlayAt(Sfx.Death, transform.position);
+            if (ranim != null) ranim.PlayDeath();
             if (selectionRing != null) selectionRing.gameObject.SetActive(false);
 
             if (bodyRenderers != null)
