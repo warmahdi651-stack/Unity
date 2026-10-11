@@ -28,7 +28,7 @@ namespace RtsWarcraft
 
         public void Init()
         {
-            font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            font = Font.CreateDynamicFontFromOSFont("Arial", 14);
             if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
             GameObject go = new GameObject("Main Menu Canvas");

@@ -18,7 +18,7 @@ namespace RtsWarcraft
         float nextRedraw;
 
         Color32 fogColor = new Color32(10, 14, 24, 255);
-        Color32 exploredColor = new Color32(28, 38, 30, 255);
+        Color32 exploredColor = new Color32(40, 54, 42, 255);
 
         public void Init()
         {
@@ -65,7 +65,7 @@ namespace RtsWarcraft
 
                     Color32 c;
                     if (h > 3.35f) c = new Color32(96, 92, 88, 255);
-                    else if (h < 0.2f) c = new Color32(46, 82, 92, 255);
+                    else if (h < 0.2f) c = new Color32(26, 86, 116, 255);
                     else if (blocked) c = new Color32(24, 58, 28, 255);
                     else
                     {

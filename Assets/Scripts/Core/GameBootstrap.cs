@@ -63,19 +63,19 @@ namespace RtsWarcraft
             GameObject sun = new GameObject("Directional Light");
             Light l = sun.AddComponent<Light>();
             l.type = LightType.Directional;
-            l.color = new Color(1.0f, 0.96f, 0.88f);
-            l.intensity = 1.05f;
+            l.color = new Color(1.0f, 0.95f, 0.84f);
+            l.intensity = 1.2f;
             l.shadows = LightShadows.Soft;
             l.shadowStrength = 0.55f;
             sun.transform.rotation = Quaternion.Euler(56f, -32f, 0f);
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.34f, 0.38f, 0.46f);
+            RenderSettings.ambientLight = new Color(0.40f, 0.44f, 0.52f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.42f, 0.50f, 0.60f);
-            RenderSettings.fogStartDistance = 90f;
-            RenderSettings.fogEndDistance = 260f;
+            RenderSettings.fogColor = new Color(0.58f, 0.66f, 0.76f);
+            RenderSettings.fogStartDistance = 110f;
+            RenderSettings.fogEndDistance = 300f;
         }
 
         /// <summary>Anything that needs the world to exist first.</summary>

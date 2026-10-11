@@ -26,6 +26,7 @@ namespace RtsWarcraft
         // bottom panels
         Text cardTitle, cardSubtitle;
         Image portraitImage;
+        Text portraitGlyph;
         RectTransform hpFill, manaFill, manaRow;
         readonly List<Button> cardButtons = new List<Button>();
         readonly List<Image> cardIcons = new List<Image>();
@@ -63,6 +64,7 @@ namespace RtsWarcraft
         struct CardAction
         {
             public string label;
+            public string detail;
             public Color color;
             public System.Action onClick;
             public float cooldownRatio;
@@ -94,7 +96,7 @@ namespace RtsWarcraft
 
         public void Init()
         {
-            font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            font = Font.CreateDynamicFontFromOSFont("Arial", 14);
             if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
             BuildCanvas();
@@ -249,6 +251,11 @@ namespace RtsWarcraft
             portraitImage.rectTransform.offsetMin = new Vector2(8f, 30f);
             portraitImage.rectTransform.offsetMax = new Vector2(-8f, -30f);
 
+            portraitGlyph = NewText("PortraitGlyph", info, "", 42, new Color(1f, 1f, 1f, 0.85f),
+                                    TextAnchor.MiddleCenter, true);
+            portraitGlyph.rectTransform.offsetMin = new Vector2(8f, 30f);
+            portraitGlyph.rectTransform.offsetMax = new Vector2(-8f, -30f);
+
             cardTitle = NewText("Title", info, "Warcraft RTS", 13, Color.white, TextAnchor.UpperCenter, true);
             cardTitle.rectTransform.anchorMin = new Vector2(0f, 1f);
             cardTitle.rectTransform.anchorMax = new Vector2(1f, 1f);
@@ -304,7 +311,8 @@ namespace RtsWarcraft
                 Button btn = cell.gameObject.AddComponent<Button>();
                 btn.targetGraphic = img;
 
-                Text label = NewText("Label", cell, "", 14, Color.white, TextAnchor.MiddleCenter, true);
+                Text label = NewText("Label", cell, "", 9, Color.white, TextAnchor.MiddleCenter, true);
+                label.horizontalOverflow = HorizontalWrapMode.Wrap;
 
                 Text key = NewText("Key", cell, "", 10, new Color(1f, 1f, 0.6f), TextAnchor.UpperLeft, true);
                 key.rectTransform.anchorMin = new Vector2(0f, 1f);
@@ -343,7 +351,8 @@ namespace RtsWarcraft
                 icon.rectTransform.offsetMin = new Vector2(2f, 2f);
                 icon.rectTransform.offsetMax = new Vector2(-2f, -2f);
 
-                Text label = NewText("Label", cell, "", 13, Color.white, TextAnchor.MiddleCenter, true);
+                Text label = NewText("Label", cell, "", 9, Color.white, TextAnchor.MiddleCenter, true);
+                label.horizontalOverflow = HorizontalWrapMode.Wrap;
 
                 stripIcons.Add(icon);
                 stripLabels.Add(label);
@@ -411,7 +420,8 @@ namespace RtsWarcraft
             barLayer = bl.GetComponent<RectTransform>();
             barLayer.SetParent(root, false);
             barLayer.anchorMin = Vector2.zero;
-            barLayer.anchorMax = Vector2.one;
+            barLayer.anchorMax = Vector2.zero;
+            barLayer.pivot = Vector2.zero;
             barLayer.offsetMin = Vector2.zero;
             barLayer.offsetMax = Vector2.zero;
 
@@ -419,7 +429,8 @@ namespace RtsWarcraft
             floatLayer = fl.GetComponent<RectTransform>();
             floatLayer.SetParent(root, false);
             floatLayer.anchorMin = Vector2.zero;
-            floatLayer.anchorMax = Vector2.one;
+            floatLayer.anchorMax = Vector2.zero;
+            floatLayer.pivot = Vector2.zero;
             floatLayer.offsetMin = Vector2.zero;
             floatLayer.offsetMax = Vector2.zero;
 
@@ -618,7 +629,9 @@ namespace RtsWarcraft
                         BuildingController trainer = b;
                         actions.Add(new CardAction
                         {
-                            label = ShortName(ud.displayName),
+                            label = ud.displayName,
+                            detail = ud.displayName + " — " + ud.goldCost + "g " + ud.lumberCost +
+                                     "l · " + ud.supply + " food",
                             color = Color.Lerp(me.color, Color.white, 0.45f),
                             onClick = delegate { trainer.Train(uid); }
                         });
@@ -665,7 +678,8 @@ namespace RtsWarcraft
                             BuildingId bid = list[i];
                             actions.Add(new CardAction
                             {
-                                label = ShortName(bd.displayName),
+                                label = bd.displayName,
+                                detail = bd.displayName + " — " + bd.goldCost + "g " + bd.lumberCost + "l",
                                 color = new Color(0.28f, 0.40f, 0.60f),
                                 onClick = delegate { gm.Placement.Begin(bid); }
                             });
@@ -695,13 +709,15 @@ namespace RtsWarcraft
 
                     actions.Add(new CardAction
                     {
-                        label = "STP",
+                        label = "Stop",
+                        detail = "Stop — cancel current orders",
                         color = new Color(0.5f, 0.5f, 0.56f),
                         onClick = delegate { gm.Orders.StopGroup(sel.SelectedUnits); }
                     });
                     actions.Add(new CardAction
                     {
-                        label = "HLD",
+                        label = "Hold",
+                        detail = "Hold position — do not chase",
                         color = new Color(0.5f, 0.5f, 0.56f),
                         onClick = delegate { gm.Orders.HoldGroup(sel.SelectedUnits); }
                     });
@@ -735,6 +751,20 @@ namespace RtsWarcraft
                 System.Action cb = a.onClick;
                 cardButtons[i].onClick.RemoveAllListeners();
                 cardButtons[i].onClick.AddListener(delegate { if (cb != null) cb(); });
+
+                EventTrigger tr = cardButtons[i].GetComponent<EventTrigger>();
+                if (tr == null) tr = cardButtons[i].gameObject.AddComponent<EventTrigger>();
+                tr.triggers.Clear();
+                string d = a.detail;
+                EventTrigger.Entry enter = new EventTrigger.Entry();
+                enter.eventID = EventTriggerType.PointerEnter;
+                enter.callback.AddListener((data) =>
+                { cardSubtitle.text = string.IsNullOrEmpty(d) ? lastSubtitle : d; });
+                EventTrigger.Entry exit = new EventTrigger.Entry();
+                exit.eventID = EventTriggerType.PointerExit;
+                exit.callback.AddListener((data) => { cardSubtitle.text = lastSubtitle; });
+                tr.triggers.Add(enter);
+                tr.triggers.Add(exit);
             }
 
             RebuildStrip();
@@ -742,6 +772,8 @@ namespace RtsWarcraft
 
         void SetTitle(string title, string subtitle)
         {
+            if (portraitGlyph != null)
+                portraitGlyph.text = string.IsNullOrEmpty(title) ? "" : title.Substring(0, 1).ToUpper();
             cardTitle.text = title;
             cardSubtitle.text = subtitle;
             lastSubtitle = subtitle;
@@ -758,10 +790,17 @@ namespace RtsWarcraft
 
                 UnitController u = sel.SelectedUnits[i];
                 stripIcons[i].color = Color.Lerp(u.Owner.color, Color.white, u.def.isHero ? 0.5f : 0.25f);
-                stripLabels[i].text = ShortName(u.def.displayName);
+                stripLabels[i].text = FirstWord(u.def.displayName);
                 stripLabels[i].color = u.CurrentHp < u.MaxHpValue * 0.4f
                     ? new Color(1f, 0.5f, 0.4f) : Color.white;
             }
+        }
+
+        static string FirstWord(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            int sp = s.IndexOf(' ');
+            return sp > 0 ? s.Substring(0, sp) : s;
         }
 
         static string ShortName(string s)

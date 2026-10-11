@@ -90,6 +90,8 @@ namespace RtsWarcraft
             Map = new GameMap(mapSeed);
 
             WorldFactory.BuildTerrain(Map);
+            WorldFactory.BuildWater(Map);
+            WorldFactory.BuildSky();
             WorldFactory.BuildResourceNodes(Map);
 
             CameraRig = RTSGameUtility.Add<RTSCameraController>(gameObject);
@@ -161,6 +163,9 @@ namespace RtsWarcraft
 
             BuildingController hall = SpawnBuilding(p, hallId, origin, true);
             p.mainHall = hall;
+
+            // Keep the starting yard clear of trees so the base reads cleanly.
+            Map.ClearNodesNear(hall.Position, 8f);
 
             UnitId workerId = GameData.WorkerOf(p.faction);
             for (int i = 0; i < workers; i++)

@@ -48,10 +48,10 @@ namespace RtsWarcraft
             }
 
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.30f, 0.42f, 0.55f);
+            cam.backgroundColor = new Color(0.62f, 0.70f, 0.80f);
             cam.fieldOfView = 55f;
             cam.nearClipPlane = 0.3f;
-            cam.farClipPlane = 400f;
+            cam.farClipPlane = 900f;
             cam.allowHDR = false;
             cam.allowMSAA = true;
 

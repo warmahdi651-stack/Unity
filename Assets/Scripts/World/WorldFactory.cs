@@ -429,19 +429,62 @@ namespace RtsWarcraft
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
+        static readonly Color Sand = new Color(0.72f, 0.65f, 0.44f);
+        static readonly Color WetSand = new Color(0.45f, 0.44f, 0.34f);
+        static readonly Color DeepWater = new Color(0.08f, 0.24f, 0.34f);
+
         static Color TerrainColor(float h, int x, int z, int size)
         {
             bool border = x < 3 || z < 3 || x >= size - 3 || z >= size - 3;
             if (border || h > 3.35f) return Rock;
-            if (h < 0.2f) return Shore;
+            if (h < 0.05f) return DeepWater;
+            if (h < 0.30f) return WetSand;
+            if (h < 0.55f) return Color.Lerp(Sand, GrassLow, Mathf.Clamp01((h - 0.30f) / 0.25f));
             if (h > 2.2f) return Color.Lerp(GrassHigh, Rock, Mathf.Clamp01((h - 2.2f) / 1.2f));
-            // Deterministic speckle so the ground is not perfectly flat in colour.
+
+            // Fine deterministic speckle so the ground is not perfectly flat in colour.
             int n = (x * 73856093) ^ (z * 19349663);
             n = (n >> 3) & 255;
-            float jitter = (n / 255f) * 0.08f - 0.04f;
+            float jitter = (n / 255f) * 0.07f - 0.035f;
+
+            // Low-frequency patches so grass reads as clumps instead of noise.
+            int px = x / 5, pz = z / 5;
+            int m = (px * 668265263) ^ (pz * 1103515245);
+            m = (m >> 5) & 255;
+            float patch = (m / 255f) - 0.5f;
+
             Color c = Color.Lerp(GrassLow, GrassHigh, Mathf.Clamp01(h / 2.2f));
+            c = Color.Lerp(c, Sand, Mathf.Clamp01(0.18f + patch * 0.22f) * 0.35f);
             c.r += jitter; c.g += jitter; c.b += jitter * 0.5f;
             return c;
+        }
+
+        public static void BuildSky()
+        {
+            GameObject go = Root("Sky");
+            MeshFilter mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = SphereMesh(380f, 12);
+            MeshRenderer mr = go.AddComponent<MeshRenderer>();
+            Shader sh = Shader.Find("RtsWarcraft/Sky");
+            if (sh == null) sh = Shader.Find("Unlit/Color");
+            mr.sharedMaterial = new Material(sh);
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        public static void BuildWater(GameMap map)
+        {
+            GameObject go = Root("Water");
+            float extent = GameMap.Size * GameData.TileSize;
+            MeshFilter mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = QuadXZ(extent + 8f);
+            MeshRenderer mr = go.AddComponent<MeshRenderer>();
+            Shader sh = Shader.Find("RtsWarcraft/Water");
+            if (sh == null) sh = Shader.Find("Legacy Shaders/Transparent/Diffuse");
+            Material m = new Material(sh);
+            m.renderQueue = 3000;
+            mr.sharedMaterial = m;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            go.transform.position = new Vector3(0f, 0.34f, 0f);
         }
 
         static Material terrainMat;
@@ -466,6 +509,9 @@ namespace RtsWarcraft
         static Mesh goldMineMesh;
         static Mesh treeTrunkMesh;
         static Mesh treeLeafMesh;
+        static Mesh treeLeafTopMesh;
+        static Mesh nuggetMesh;
+        static Material[] leafMats;
 
         public static void BuildResourceNodes(GameMap map)
         {
@@ -476,12 +522,19 @@ namespace RtsWarcraft
                 goldMineMesh = BoxMesh(new Vector3(2.6f, 1.6f, 2.6f));
                 treeTrunkMesh = CylinderMesh(0.22f, 2.2f, 6);
                 treeLeafMesh = ConeMesh(1.15f, 2.6f, 7);
+                treeLeafTopMesh = ConeMesh(0.80f, 1.9f, 7);
+                nuggetMesh = BoxMesh(new Vector3(0.5f, 0.5f, 0.5f));
+                leafMats = new[]
+                {
+                    Solid(new Color(0.10f, 0.34f, 0.13f)),
+                    Solid(new Color(0.14f, 0.44f, 0.17f)),
+                    Solid(new Color(0.19f, 0.50f, 0.21f))
+                };
             }
 
             Material goldMat = Solid(GoldColor);
             Material rockMat = Solid(GoldRock);
             Material trunkMat = Solid(TreeTrunk);
-            Material leafMat = Solid(TreeLeaf);
 
             for (int i = 0; i < map.Nodes.Count; i++)
             {
@@ -495,18 +548,35 @@ namespace RtsWarcraft
                     go = new GameObject("GoldMine_" + i);
                     go.transform.SetParent(root.transform, false);
                     go.transform.position = p;
-                    Part(go.transform, goldMineMesh, goldMat, new Vector3(0f, 0.8f, 0f), Quaternion.identity, "Ore");
-                    Part(go.transform, goldMineMesh, rockMat, new Vector3(0f, 0.15f, 0f),
-                         Quaternion.Euler(0f, 22f, 0f) * Quaternion.identity, "Base").transform.localScale =
-                        new Vector3(1.25f, 0.22f, 1.25f);
+                    Part(go.transform, goldMineMesh, rockMat, new Vector3(0f, 0.55f, 0f),
+                         Quaternion.Euler(0f, 18f, 0f), "Mound").transform.localScale =
+                        new Vector3(1.15f, 0.55f, 0.5f * 2.3f);
+                    Part(go.transform, goldMineMesh, rockMat, new Vector3(-0.7f, 0.35f, 0.5f),
+                         Quaternion.Euler(8f, 64f, 0f), "RockA").transform.localScale =
+                        new Vector3(0.5f, 0.4f, 0.5f);
+                    Part(go.transform, goldMineMesh, rockMat, new Vector3(0.8f, 0.3f, -0.4f),
+                         Quaternion.Euler(-6f, 120f, 0f), "RockB").transform.localScale =
+                        new Vector3(0.45f, 0.35f, 0.45f);
+                    Part(go.transform, nuggetMesh, goldMat, new Vector3(0.2f, 1.0f, 0.3f),
+                         Quaternion.Euler(20f, 30f, 0f), "NuggetA");
+                    Part(go.transform, nuggetMesh, goldMat, new Vector3(-0.5f, 0.8f, -0.4f),
+                         Quaternion.Euler(0f, 70f, 10f), "NuggetB");
+                    Part(go.transform, nuggetMesh, goldMat, new Vector3(0.6f, 0.75f, 0.6f),
+                         Quaternion.Euler(10f, 10f, 0f), "NuggetC");
                 }
                 else
                 {
                     go = new GameObject("Tree_" + i);
                     go.transform.SetParent(root.transform, false);
                     go.transform.position = p;
+                    int hv = ((i * 654435761) >> 8) & 255;
+                    float sc = 0.85f + (hv / 255f) * 0.45f;
+                    go.transform.localScale = new Vector3(sc, sc * (0.9f + (((hv >> 3) & 31) / 31f) * 0.35f), sc);
+                    go.transform.localRotation = Quaternion.Euler(0f, (hv * 7) % 360, 0f);
                     Part(go.transform, treeTrunkMesh, trunkMat, Vector3.zero, Quaternion.identity, "Trunk");
-                    Part(go.transform, treeLeafMesh, leafMat, new Vector3(0f, 1.7f, 0f), Quaternion.identity, "Leaves");
+                    Material leaf = leafMats[hv % 3];
+                    Part(go.transform, treeLeafMesh, leaf, new Vector3(0f, 1.55f, 0f), Quaternion.identity, "LeavesLow");
+                    Part(go.transform, treeLeafTopMesh, leaf, new Vector3(0f, 2.6f, 0f), Quaternion.identity, "LeavesTop");
                 }
 
                 SelectableMarker marker = go.AddComponent<SelectableMarker>();
@@ -610,8 +680,9 @@ namespace RtsWarcraft
 
             float w = def.sizeX * GameData.TileSize * 0.92f;
             float d = def.sizeZ * GameData.TileSize * 0.92f;
-            Color body = Color.Lerp(owner.color, new Color(0.55f, 0.5f, 0.42f), 0.45f);
-            Color roof = Color.Lerp(owner.color, Color.black, 0.25f);
+            Color stone = new Color(0.62f, 0.58f, 0.50f);
+            Color body = Color.Lerp(stone, owner.color, 0.22f);
+            Color roof = Color.Lerp(owner.color, Color.black, 0.12f);
             Color wood = TreeTrunk;
 
             bool isTower = def.id == BuildingId.GuardTower || def.id == BuildingId.WatchTower;
@@ -657,6 +728,10 @@ namespace RtsWarcraft
                          new Vector3(w * 0.35f, 0f, d * 0.35f), Quaternion.identity, "TowerR");
                     Part(go.transform, SphereMesh(0.45f, 5), Solid(GoldColor),
                          new Vector3(0f, h + 1.6f, 0f), Quaternion.identity, "Finial");
+                    Part(go.transform, CylinderMesh(0.09f, 2.2f, 5), Solid(wood),
+                         new Vector3(w * 0.35f, h + rise + 0.2f, -d * 0.35f), Quaternion.identity, "FlagPole");
+                    Part(go.transform, BoxMesh(new Vector3(1.1f, 0.55f, 0.05f)), Solid(owner.color),
+                         new Vector3(w * 0.35f + 0.6f, h + rise + 0.95f, -d * 0.35f), Quaternion.identity, "Banner");
                 }
                 if (isFarm)
                 {

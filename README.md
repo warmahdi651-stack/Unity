@@ -41,6 +41,18 @@ That is the entire setup. The scene contains a single GameObject
 (`GameBootstrap`); at runtime it builds the camera, the sun, the 128×128 map,
 the resource nodes, both players, all systems and the whole interface.
 
+### v1.3 - graphics & polish pass
+
+- Real water plane with an animated shader, gradient sky dome, warm sun +
+  atmospheric fog, sandy shorelines and grass colour patches.
+- Conifer trees with two leaf layers and per-tree size/colour variance,
+  rocky gold mines with gold nuggets, town halls with flag banners,
+  stone walls with faction-coloured roofs.
+- Starting yard is cleared of trees around each Town Hall.
+- HUD: full readable button names with hover cost tooltips, portrait glyph,
+  health bars re-anchored so they sit on their units, font lookup that never
+  logs errors on Unity 2022.1.
+
 ### Copying into a project created in Unity Hub
 
 You do **not** need the *3D Mobile* template — a template only decides the

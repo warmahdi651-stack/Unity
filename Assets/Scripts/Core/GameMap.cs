@@ -313,6 +313,22 @@ namespace RtsWarcraft
             return NodeAtTile(t.x, t.y);
         }
 
+        /// <summary>Destroys tree nodes inside a radius (keeps gold mines).</summary>
+        public void ClearNodesNear(Vector3 worldCenter, float radius)
+        {
+            for (int i = Nodes.Count - 1; i >= 0; i--)
+            {
+                ResourceNode n = Nodes[i];
+                if (n.kind != ResourceKind.Lumber || n.Depleted) continue;
+                float dx = n.position.x - worldCenter.x;
+                float dz = n.position.z - worldCenter.z;
+                if (dx * dx + dz * dz > radius * radius) continue;
+                if (n.go != null) Object.Destroy(n.go);
+                n.amount = 0;
+                RemoveNode(n);
+            }
+        }
+
         /// <summary>Removes a depleted node and frees its tiles.</summary>
         public void RemoveNode(ResourceNode n)
         {
