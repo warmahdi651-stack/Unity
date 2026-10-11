@@ -11,17 +11,44 @@ import.
 
 ---
 
-## Quick start
+## Install, step by step
 
-1. Install **Unity 2022.3 LTS** (any 2022.3.x; the project was authored against
-   `2022.3.62f1`). 2021.3 LTS and 2023.x will also open it.
-2. Open Unity Hub → *Add project from disk* → select this folder.
-3. Open the scene **`Assets/Scenes/Main.unity`**.
-4. Press **Play**.
+You only need to download **one** thing: Unity Hub. It then downloads the
+editor for you.
+
+1. **Download Unity Hub** — <https://unity.com/download> → *Download Unity Hub*
+   (`UnityHubSetup.exe` on Windows, `.dmg` on macOS). Install it.
+2. **Create a free account and sign in** inside Hub. A free **Unity Personal**
+   licence is enough — this project needs no paid module.
+3. **Install the editor:** Hub → *Installs* → **Install Editor** → pick the
+   newest **2022.3 LTS** (any 2022.3.x works; `ProjectVersion.txt` names
+   `2022.3.62f1`, and if your patch differs Unity simply asks which installed
+   version to open it with — choose yours). In the module list you need
+   **nothing extra** — no Android/iOS/WebGL module is required to just play.
+4. **Get the project**, either way:
+   * **Git:** `git clone -b arena/0f62c8dc-unity https://github.com/warmahdi651-stack/Unity.git`
+   * **ZIP:** <https://github.com/warmahdi651-stack/Unity/archive/refs/heads/arena/0f62c8dc-unity.zip>
+     → unzip it anywhere (avoid paths with non-ASCII characters).
+5. **Open it:** Hub → *Projects* → **Add** → *Add project from disk* → select the
+   unzipped folder (the one containing `Assets/`, `Packages/`, `ProjectSettings/`).
+6. **Open the scene** `Assets/Scenes/Main.unity` in the Project window.
+7. Press **Play** (the ▶ button, or `Ctrl+P`).
+
+The first open takes a minute while Unity imports the project and resolves the
+packages in `Packages/manifest.json`.
 
 That is the entire setup. The scene contains a single GameObject
 (`GameBootstrap`); at runtime it builds the camera, the sun, the 128×128 map,
 the resource nodes, both players, all systems and the whole interface.
+
+### If something goes wrong
+
+| Symptom | Fix |
+| --- | --- |
+| Hub says the editor version is missing | Click it and install 2022.3 LTS, or pick any installed 2022.3.x when prompted. |
+| Console shows shader warnings | The fog uses `Assets/Shaders/FogOfWar.shader`; it is a plain unlit CG shader and works on the built-in pipeline. Warnings are harmless. |
+| Screen is all blue | The scene is open but you have not pressed Play — the world is built at runtime. |
+| Units do not respond | Click on one of *your* blue units first, then right-click. |
 
 > **Render pipeline:** built-in. **Input:** legacy Input Manager.
 > **Packages:** only `com.unity.ugui` plus the default engine modules — see
