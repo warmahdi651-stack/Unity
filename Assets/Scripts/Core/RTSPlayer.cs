@@ -27,6 +27,10 @@ namespace RtsWarcraft
         /// <summary>Town hall used as the default resource drop-off.</summary>
         public BuildingController mainHall;
 
+        // Blacksmith research (shared by the whole army)
+        public int weaponsLevel;
+        public int armorLevel;
+
         // Stats for the HUD
         public int totalGoldGathered;
         public int totalLumberGathered;

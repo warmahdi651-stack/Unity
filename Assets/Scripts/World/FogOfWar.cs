@@ -21,12 +21,22 @@ namespace RtsWarcraft
         GameObject plane;
         float nextUpdate;
 
+        public bool Enabled { get; private set; }
+
+        public void SetEnabled(bool on)
+        {
+            Enabled = on;
+            if (plane != null) plane.SetActive(on);
+            if (on) nextUpdate = 0f;
+        }
+
         static readonly Color32 Black = new Color32(2, 3, 8, 246);
         static readonly Color32 Dark = new Color32(12, 20, 34, 106);
         static readonly Color32 Clear = new Color32(0, 0, 0, 0);
 
         public void Init()
         {
+            Enabled = GameManager.I.fogEnabled;
             visible = new byte[Cells * Cells];
             explored = new byte[Cells * Cells];
             pixels = new Color32[Cells * Cells];
@@ -65,6 +75,7 @@ namespace RtsWarcraft
             }
             mat.mainTexture = tex;
             mr.sharedMaterial = mat;
+            plane.SetActive(Enabled);
         }
 
         // ===================================================================
@@ -96,7 +107,7 @@ namespace RtsWarcraft
 
         public void UpdateFog()
         {
-            if (visible == null) return;
+            if (visible == null || !Enabled) return;
             if (Time.time < nextUpdate) return;
             nextUpdate = Time.time + 0.12f;
 

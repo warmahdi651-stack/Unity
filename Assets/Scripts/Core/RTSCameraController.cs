@@ -24,11 +24,15 @@ namespace RtsWarcraft
 
         public Vector3 focus;
 
+        /// <summary>Slow cinematic yaw used behind the main menu.</summary>
+        public bool menuOrbit;
+
         Camera cam;
         float currentZoom = 26f;
         float targetZoom = 26f;
         Vector3 dragOrigin;
         bool dragging;
+        bool usingTouch;
 
         public Camera Cam { get { return cam; } }
 
@@ -68,9 +72,31 @@ namespace RtsWarcraft
             Apply();
         }
 
+        /// <summary>Screen-space pan shared by middle-drag and one-finger touch.</summary>
+        public void PanScreenDelta(Vector2 delta)
+        {
+            Quaternion yawRot = Quaternion.Euler(0f, yaw + 180f, 0f);
+            float scale = currentZoom / Mathf.Max(1f, Screen.height) * 2.2f;
+            focus += yawRot * new Vector3(delta.x * scale, 0f, delta.y * scale);
+            focus = ClampToMap(focus);
+        }
+
+        public void ZoomBy(float factor)
+        {
+            targetZoom = Mathf.Clamp(targetZoom * factor, minZoom, maxZoom);
+        }
+
         void Update()
         {
             if (cam == null) return;
+            usingTouch = Input.touchSupported && Input.touchCount > 0;
+
+            if (menuOrbit)
+            {
+                yaw += 5f * Time.deltaTime;
+                Apply();
+                return;
+            }
 
             // ---- zoom ----
             float wheel = Input.GetAxis("Mouse ScrollWheel");
@@ -110,8 +136,8 @@ namespace RtsWarcraft
             }
             if (Input.GetMouseButtonUp(2)) dragging = false;
 
-            // ---- edge scroll ----
-            if (edgeScrollEnabled && !HUDController.IsPointerOverUI(Input.mousePosition))
+            // ---- edge scroll (desktop only; a stale touch position must not pan) ----
+            if (edgeScrollEnabled && !usingTouch && !HUDController.IsPointerOverUI(Input.mousePosition))
             {
                 Vector3 m = Input.mousePosition;
                 Vector3 edge = Vector3.zero;

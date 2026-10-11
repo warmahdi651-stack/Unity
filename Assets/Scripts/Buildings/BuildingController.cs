@@ -23,6 +23,9 @@ namespace RtsWarcraft
         public readonly List<UnitId> trainQueue = new List<UnitId>();
         float trainTimer;
 
+        public readonly List<UpgradeId> researchQueue = new List<UpgradeId>();
+        float researchTimer;
+
         public Vector3 rallyPoint;
         public bool hasRallyPoint;
 
@@ -113,6 +116,14 @@ namespace RtsWarcraft
         {
             if (!CanTrain(id)) return false;
 
+            BuildingId req = GameData.RequirementOf(id);
+            if (req != BuildingId.None && owner.FindBuilding(req) == null)
+            {
+                GameManager.I.Say(GameData.GetUnit(id).displayName + " requires a " +
+                                  GameData.GetBuilding(req).displayName + ".", Color.red);
+                return false;
+            }
+
             UnitDef ud = GameData.GetUnit(id);
             if (!owner.CanAfford(ud.goldCost, ud.lumberCost))
             {
@@ -140,6 +151,57 @@ namespace RtsWarcraft
             GameManager.I.Events.OnResourcesChanged();
             trainQueue.RemoveAt(index);
             if (trainQueue.Count > 0) trainTimer = 0f;
+        }
+
+        // ===================================================================
+        //  Research (Blacksmith upgrades)
+        // ===================================================================
+
+        public int CurrentLevel(UpgradeId u)
+        {
+            if (u == UpgradeId.Weapons) return owner.weaponsLevel;
+            if (u == UpgradeId.Armor) return owner.armorLevel;
+            return 0;
+        }
+
+        public bool CanResearch(UpgradeId u)
+        {
+            if (!IsComplete || !alive) return false;
+            if (researchQueue.Count >= 1) return false;
+            int next = CurrentLevel(u) + 1;
+            if (next > GameData.MaxUpgradeLevel) return false;
+            return owner.CanAfford(GameData.UpgradeGold(u, next), GameData.UpgradeLumber(u, next));
+        }
+
+        public bool StartResearch(UpgradeId u)
+        {
+            if (!CanResearch(u)) return false;
+            int next = CurrentLevel(u) + 1;
+            owner.Pay(GameData.UpgradeGold(u, next), GameData.UpgradeLumber(u, next));
+            GameManager.I.Events.OnResourcesChanged();
+            researchQueue.Add(u);
+            return true;
+        }
+
+        void TickResearch(float dt)
+        {
+            if (researchQueue.Count == 0) return;
+            int next = CurrentLevel(researchQueue[0]) + 1;
+            researchTimer += dt;
+            if (researchTimer < GameData.UpgradeTime(next)) return;
+
+            researchTimer = 0f;
+            UpgradeId done = researchQueue[0];
+            researchQueue.RemoveAt(0);
+
+            if (done == UpgradeId.Weapons) owner.weaponsLevel++;
+            else owner.armorLevel++;
+
+            GameManager.I.Say((done == UpgradeId.Weapons ? "Weapons" : "Armor") +
+                              " upgraded to level " +
+                              (done == UpgradeId.Weapons ? owner.weaponsLevel : owner.armorLevel) + "!",
+                              new Color(1f, 0.85f, 0.4f));
+            CombatFx.BuildComplete(transform.position);
         }
 
         void TickTraining(float dt)
@@ -209,6 +271,7 @@ namespace RtsWarcraft
             float dt = Mathf.Min(Time.deltaTime, 0.05f) * GameManager.I.gameSpeed;
 
             TickTraining(dt);
+            TickResearch(dt);
             TickAttack(dt);
         }
 
@@ -291,6 +354,16 @@ namespace RtsWarcraft
                 if (trainQueue.Count == 0) return 0f;
                 UnitDef ud = GameData.GetUnit(trainQueue[0]);
                 return Mathf.Clamp01(trainTimer / Mathf.Max(0.01f, ud.trainTime));
+            }
+        }
+
+        public float TrainingResearch
+        {
+            get
+            {
+                if (researchQueue.Count == 0) return 0f;
+                int next = CurrentLevel(researchQueue[0]) + 1;
+                return Mathf.Clamp01(researchTimer / Mathf.Max(0.01f, GameData.UpgradeTime(next)));
             }
         }
     }

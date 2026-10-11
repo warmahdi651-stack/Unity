@@ -23,7 +23,7 @@ namespace RtsWarcraft
         [Range(1, 12)] public int startingWorkers = 5;
 
         [Tooltip("Give every player a starting hero.")]
-        public bool startingHeroes = true;
+        public bool startingHeroes = false;
 
         [Tooltip("Log simulation information to the console.")]
         public bool verbose = true;
@@ -39,7 +39,7 @@ namespace RtsWarcraft
             manager.spawnAiOpponent = spawnAiOpponent;
             manager.startingWorkers = startingWorkers;
             manager.startingHeroes = startingHeroes;
-            manager.Bootstrap();
+            manager.BootstrapWorld();
 
             SpawnStartingExtras();
 

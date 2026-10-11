@@ -191,6 +191,33 @@ namespace RtsWarcraft
                         visualScale = new Vector3(0.9f, 1.9f, 0.9f)
                     };
 
+                case UnitId.Priest:
+                    return new UnitDef
+                    {
+                        id = UnitId.Priest, displayName = "Priest", faction = FactionId.Alliance,
+                        unitClass = UnitClass.Caster,
+                        goldCost = 145, lumberCost = 0, supply = 2, trainTime = 20f,
+                        maxHp = 290f, hpRegen = 0.25f, maxMana = 400f, manaRegen = 1.5f, armor = 0,
+                        attackDamage = 9f, attackRange = 5.5f, attackCooldown = 1.6f,
+                        damageType = AttackDamageType.Magic, rangedAttack = true, projectileSpeed = 16f,
+                        moveSpeed = 3.4f, turnRate = 360f, radius = 0.35f, sightRange = 14f,
+                        trainsAt = BuildingId.ArcaneSanctum, isHero = false,
+                        visualScale = new Vector3(0.75f, 1.6f, 0.75f)
+                    };
+                case UnitId.Sorceress:
+                    return new UnitDef
+                    {
+                        id = UnitId.Sorceress, displayName = "Sorceress", faction = FactionId.Alliance,
+                        unitClass = UnitClass.Caster,
+                        goldCost = 155, lumberCost = 0, supply = 2, trainTime = 20f,
+                        maxHp = 245f, hpRegen = 0.25f, maxMana = 300f, manaRegen = 1.5f, armor = 0,
+                        attackDamage = 13f, attackRange = 5.5f, attackCooldown = 1.5f,
+                        damageType = AttackDamageType.Magic, rangedAttack = true, projectileSpeed = 16f,
+                        moveSpeed = 3.4f, turnRate = 360f, radius = 0.35f, sightRange = 14f,
+                        trainsAt = BuildingId.ArcaneSanctum, isHero = false,
+                        visualScale = new Vector3(0.72f, 1.58f, 0.72f)
+                    };
+
                 // ---------------- Horde ----------------
                 case UnitId.Peon:
                     return new UnitDef
@@ -357,7 +384,8 @@ namespace RtsWarcraft
                     {
                         id = BuildingId.ArcaneSanctum, displayName = "Arcane Sanctum", faction = FactionId.Alliance,
                         goldCost = 170, lumberCost = 70, supplyProvided = 0, buildTime = 60f,
-                        maxHp = 800f, armor = 2, sizeX = 3, sizeZ = 3, sightRange = 12f
+                        maxHp = 800f, armor = 2, sizeX = 3, sizeZ = 3,
+                        trains = new[] { UnitId.Priest, UnitId.Sorceress }, sightRange = 12f
                     };
 
                 // ---------------- Horde ----------------
@@ -426,6 +454,27 @@ namespace RtsWarcraft
             }
             return default;
         }
+
+        /// <summary>Which Alliance building a unit type needs before training.</summary>
+        public static BuildingId RequirementOf(UnitId id)
+        {
+            if (id == UnitId.Knight) return BuildingId.Blacksmith;
+            return BuildingId.None;
+        }
+
+        public const int MaxUpgradeLevel = 3;
+
+        public static int UpgradeGold(UpgradeId u, int nextLevel)
+        {
+            return u == UpgradeId.Weapons ? 100 + 75 * (nextLevel - 1) : 100 + 75 * (nextLevel - 1);
+        }
+
+        public static int UpgradeLumber(UpgradeId u, int nextLevel)
+        {
+            return u == UpgradeId.Weapons ? 50 + 50 * (nextLevel - 1) : 75 + 50 * (nextLevel - 1);
+        }
+
+        public static float UpgradeTime(int nextLevel) { return 45f + 15f * (nextLevel - 1); }
 
         /// <summary>Which buildings a worker of this faction may construct.</summary>
         public static BuildingId[] BuildableFor(FactionId f)

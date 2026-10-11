@@ -63,7 +63,8 @@ namespace RtsWarcraft
             Material m;
             if (materialCache.TryGetValue(key, out m)) return m;
 
-            Shader sh = Shader.Find("Standard");
+            Shader sh = Shader.Find("RtsWarcraft/Lit");
+            if (sh == null) sh = Shader.Find("Standard");
             if (sh == null) sh = Shader.Find("Legacy Shaders/Diffuse");
             m = new Material(sh);
             m.color = c;
@@ -78,20 +79,11 @@ namespace RtsWarcraft
             Material m;
             if (materialCache.TryGetValue(key, out m)) return m;
 
-            Shader sh = Shader.Find("Standard");
-            m = new Material(sh != null ? sh : Shader.Find("Legacy Shaders/Transparent/Diffuse"));
+            Shader sh = Shader.Find("RtsWarcraft/Transparent");
+            if (sh == null) sh = Shader.Find("Legacy Shaders/Transparent/Diffuse");
+            m = new Material(sh);
             m.color = c;
-            if (sh != null)
-            {
-                m.SetFloat("_Mode", 3f); // Transparent
-                m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                m.SetInt("_ZWrite", 0);
-                m.DisableKeyword("_ALPHATEST_ON");
-                m.EnableKeyword("_ALPHABLEND_ON");
-                m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                m.renderQueue = 3000;
-            }
+            m.renderQueue = 3000;
             materialCache[key] = m;
             return m;
         }
@@ -456,27 +448,9 @@ namespace RtsWarcraft
         static Material TerrainMaterial()
         {
             if (terrainMat != null) return terrainMat;
-            Shader sh = Shader.Find("Standard (Specular setup)");
-            if (sh == null) sh = Shader.Find("Standard");
-            if (sh == null) sh = Shader.Find("Legacy Shaders/VertexLit");
-
-            if (sh != null && sh.name == "Standard (Specular setup)")
-            {
-                // The specular setup shader multiplies albedo by vertex colour.
-                terrainMat = new Material(sh);
-                terrainMat.SetFloat("_SpecularHighlights", 0f);
-                terrainMat.SetFloat("_Glossiness", 0.05f);
-            }
-            else if (sh != null && sh.name == "Standard")
-            {
-                terrainMat = new Material(sh);
-                terrainMat.SetFloat("_Glossiness", 0.05f);
-                terrainMat.EnableKeyword("_VERTEXCOLOR");
-            }
-            else
-            {
-                terrainMat = new Material(sh != null ? sh : Shader.Find("Unlit/Color"));
-            }
+            Shader sh = Shader.Find("RtsWarcraft/Terrain");
+            if (sh == null) sh = Shader.Find("Unlit/Color");
+            terrainMat = new Material(sh);
             return terrainMat;
         }
 

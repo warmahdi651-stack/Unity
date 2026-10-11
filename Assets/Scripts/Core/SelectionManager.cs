@@ -101,8 +101,12 @@ namespace RtsWarcraft
 
             if (Input.GetMouseButtonUp(0) && !overUI)
             {
-                if (IsDragging) FinishDrag();
-                else HandleClick(mouse);
+                bool swallowed = TouchGestures.ConsumeClickSuppression();
+                if (!swallowed)
+                {
+                    if (IsDragging) FinishDrag();
+                    else HandleClick(mouse);
+                }
                 IsDragging = false;
             }
 
@@ -167,6 +171,33 @@ namespace RtsWarcraft
         {
             SelectableMarker hit = Pick(screen);
             bool additive = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+            // ---- mobile smart tap: with a selection, tapping the world issues
+            //      a command instead of deselecting (there is no right button).
+            if (Input.touchSupported && !additive && SelectedUnits.Count > 0 && SelectionIsOwn)
+            {
+                if (hit != null && hit.unit != null && hit.unit.Owner != GameManager.I.Human)
+                {
+                    GameManager.I.Orders.AttackTargetGroup(SelectedUnits, hit.unit);
+                    return;
+                }
+                if (hit != null && hit.building != null && hit.building.Owner != GameManager.I.Human)
+                {
+                    GameManager.I.Orders.AttackTargetGroup(SelectedUnits, hit.building);
+                    return;
+                }
+                if (hit != null && hit.node != null)
+                {
+                    GameManager.I.Orders.HarvestGroup(SelectedUnits, hit.node);
+                    return;
+                }
+                if (hit == null)
+                {
+                    GameManager.I.Orders.MoveGroup(SelectedUnits, LastGroundPoint);
+                    return;
+                }
+                // tapping an own unit / building falls through to selecting it
+            }
 
             if (hit != null && hit.unit != null)
             {

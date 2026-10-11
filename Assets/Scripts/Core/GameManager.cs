@@ -10,13 +10,16 @@ namespace RtsWarcraft
     // -----------------------------------------------------------------------
     public class GameEvents
     {
-        public Action OnSelectionChanged;
-        public Action OnResourcesChanged;
-        public Action OnSupplyChanged;
-        public Action<UnitController> OnUnitDied;
-        public Action<BuildingController> OnBuildingDestroyed;
-        public Action OnGameOver;
-        public Action<string, Color> OnMessage;
+        // Initialised with no-op delegates: firing an event before any system has
+        // subscribed (e.g. supply events while the starting base spawns, before
+        // the HUD exists) must never throw a NullReferenceException.
+        public Action OnSelectionChanged = delegate { };
+        public Action OnResourcesChanged = delegate { };
+        public Action OnSupplyChanged = delegate { };
+        public Action<UnitController> OnUnitDied = delegate { };
+        public Action<BuildingController> OnBuildingDestroyed = delegate { };
+        public Action OnGameOver = delegate { };
+        public Action<string, Color> OnMessage = delegate { };
     }
 
     // -----------------------------------------------------------------------
@@ -30,7 +33,8 @@ namespace RtsWarcraft
         public int mapSeed = 20020116;
         public bool spawnAiOpponent = true;
         public int startingWorkers = 5;
-        public bool startingHeroes = true;
+        public bool startingHeroes = false;
+        public bool fogEnabled = true;
 
         [Header("Simulation")]
         public float gameSpeed = 1f;
@@ -70,14 +74,40 @@ namespace RtsWarcraft
             Application.targetFrameRate = 120;
         }
 
-        /// <summary>Called by GameBootstrap after the world exists.</summary>
-        public void Bootstrap()
+        public MainMenuController Menu { get; private set; }
+        public bool MatchStarted { get; private set; }
+
+        /// <summary>Phase 1 (called by GameBootstrap): build the map, the camera
+        ///  and the main menu over a live orbiting view of the terrain.  No
+        ///  players, no simulation yet - that is StartMatch().</summary>
+        public void BootstrapWorld()
         {
             MatchTime = 0f;
             GameOver = false;
+            MatchStarted = false;
             Players = new List<RTSPlayer>();
 
             Map = new GameMap(mapSeed);
+
+            WorldFactory.BuildTerrain(Map);
+            WorldFactory.BuildResourceNodes(Map);
+
+            CameraRig = RTSGameUtility.Add<RTSCameraController>(gameObject);
+            CameraRig.SetFocus(Vector3.zero);
+            CameraRig.menuOrbit = true;
+
+            RTSGameUtility.Add<TouchGestures>(gameObject);
+
+            Menu = RTSGameUtility.Add<MainMenuController>(gameObject);
+            Menu.Init();
+        }
+
+        /// <summary>Phase 2 (called by the main menu): create players, bases,
+        ///  systems and the interface, then run the simulation.</summary>
+        public void StartMatch()
+        {
+            if (MatchStarted || Map == null) return;
+            MatchStarted = true;
 
             Human = new RTSPlayer(0, "You", FactionId.Alliance, true);
             Players.Add(Human);
@@ -88,23 +118,16 @@ namespace RtsWarcraft
                 Players.Add(Enemy);
             }
 
-            // World visuals (terrain, resource nodes).
-            WorldFactory.BuildTerrain(Map);
-            WorldFactory.BuildResourceNodes(Map);
-
-            // Systems.
             Orders = new OrderSystem();
             Selection = new SelectionManager();
             Fog = new FogOfWar();
             Abilities = new AbilitySystem();
 
-            CameraRig = RTSGameUtility.Add<RTSCameraController>(gameObject);
             HUD = RTSGameUtility.Add<HUDController>(gameObject);
             Minimap = RTSGameUtility.Add<MinimapController>(gameObject);
             Placement = RTSGameUtility.Add<PlacementController>(gameObject);
             if (Enemy != null) AI = RTSGameUtility.Add<EnemyAI>(gameObject);
 
-            // Starting bases.
             SpawnStartingBase(Human, new Vector2Int(16, 16), startingWorkers);
             if (Enemy != null) SpawnStartingBase(Enemy, new Vector2Int(GameMap.Size - 17, GameMap.Size - 17), startingWorkers);
 
@@ -115,8 +138,17 @@ namespace RtsWarcraft
             Placement.Init();
             if (AI != null) AI.Init();
 
-            Events.OnResourcesChanged += () => { };
-            Events.OnSupplyChanged += () => { };
+            if (CameraRig != null)
+            {
+                CameraRig.menuOrbit = false;
+                if (Human.mainHall != null) CameraRig.SetFocus(Human.mainHall.Position);
+            }
+
+            if (Application.isMobilePlatform)
+            {
+                Application.targetFrameRate = 60;
+                Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            }
 
             StartCoroutine(WinCheckLoop());
         }
@@ -199,6 +231,7 @@ namespace RtsWarcraft
             float dt = Mathf.Min(Time.deltaTime, 0.05f) * gameSpeed;
             MatchTime += dt;
 
+            if (Orders == null) return;
             Orders.Update(dt);
             Selection.UpdateInput();
             Placement.UpdateInput();
@@ -214,7 +247,7 @@ namespace RtsWarcraft
             if (Fog != null) Fog.UpdateFog();
             if (HUD != null) HUD.LateTick();
             if (Minimap != null) Minimap.LateTick();
-            Selection.LateTick(dt);
+            if (Selection != null) Selection.LateTick(dt);
         }
 
         void ProcessDeaths()

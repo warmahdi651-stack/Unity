@@ -581,6 +581,34 @@ namespace RtsWarcraft
                          b.IsComplete ? "Completed" : "Building " + Mathf.RoundToInt(b.buildProgress * 100f) + "%");
                 portraitImage.color = Color.Lerp(me.color, Color.white, 0.3f);
 
+                if (b.defId == BuildingId.Blacksmith && b.IsComplete)
+                {
+                    BuildingController smith = b;
+                    UpgradeId[] ups = { UpgradeId.Weapons, UpgradeId.Armor };
+                    string[] names = { "Weapons", "Armor" };
+                    for (int ui = 0; ui < ups.Length; ui++)
+                    {
+                        UpgradeId up = ups[ui];
+                        int lvl = b.CurrentLevel(up);
+                        int next = lvl + 1;
+                        bool maxed = lvl >= GameData.MaxUpgradeLevel;
+                        string cost = maxed ? "MAX" :
+                            GameData.UpgradeGold(up, next) + "g " + GameData.UpgradeLumber(up, next) + "l";
+                        string nm = names[ui];
+                        actions.Add(new CardAction
+                        {
+                            label = (up == UpgradeId.Weapons ? "W" : "A") + Mathf.Min(next, 3),
+                            color = maxed ? new Color(0.35f, 0.35f, 0.4f) : new Color(0.55f, 0.35f, 0.15f),
+                            onClick = delegate { smith.StartResearch(up); }
+                        });
+                        // tooltip-ish info goes to the subtitle while researching
+                        if (b.researchQueue.Count > 0)
+                            SetTitle(b.def.displayName, "Researching " +
+                                     (b.researchQueue[0] == UpgradeId.Weapons ? "weapons" : "armor") + " " +
+                                     Mathf.RoundToInt(b.TrainingResearch * 100f) + "%");
+                    }
+                }
+
                 if (b.IsComplete && b.def.trains != null)
                 {
                     for (int i = 0; i < b.def.trains.Length && actions.Count < CardSlots - 2; i++)

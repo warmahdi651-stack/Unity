@@ -30,6 +30,8 @@ namespace RtsWarcraft
         // ---- buffs ----
         public float invulnUntil;
         public float stealthUntil;
+        public float slowUntil;
+        float priestAt;
         public bool IsStealthed { get { return Time.time < stealthUntil; } }
         public bool IsInvulnerable { get { return Time.time < invulnUntil; } }
 
@@ -105,9 +107,12 @@ namespace RtsWarcraft
                     else if (def.heroPrimaryAttribute == 1) bonus += agility * 1.2f;
                     else bonus += intelligence * 1.2f;
                 }
+                if (owner != null) bonus += owner.weaponsLevel * 2f;
                 return def.attackDamage + bonus;
             }
         }
+
+        public bool IsSlowed { get { return Time.time < slowUntil; } }
 
         public float MoveSpeed
         {
@@ -115,6 +120,7 @@ namespace RtsWarcraft
             {
                 float s = def.moveSpeed;
                 if (IsStealthed) s *= 1.25f;
+                if (IsSlowed) s *= 0.6f;
                 return s;
             }
         }
@@ -412,6 +418,7 @@ namespace RtsWarcraft
 
             Regen(dt);
             TickCooldownVisuals();
+            if (defId == UnitId.Priest) TickPriestHeal();
 
             // An order that completed during the previous BeginCurrent() is
             // drained here so we never recurse into the order queue.
@@ -589,6 +596,12 @@ namespace RtsWarcraft
                 }
             }
 
+            if (defId == UnitId.Sorceress)
+            {
+                UnitController tu = target as UnitController;
+                if (tu != null) tu.slowUntil = Time.time + 2f;
+            }
+
             if (def.rangedAttack && def.projectileSpeed > 0f)
             {
                 ProjectileController.Launch(this, target, dmg, def.damageType, def.projectileSpeed);
@@ -598,6 +611,22 @@ namespace RtsWarcraft
                 target.TakeDamage(dmg, def.damageType, this);
                 CombatFx.MeleeImpact(target.Position);
             }
+        }
+
+        /// <summary>Priests auto-cast a small heal on the most wounded ally nearby.</summary>
+        void TickPriestHeal()
+        {
+            if (Time.time < priestAt || mana < 25f) return;
+            UnitController wounded = CombatMath.NearestWoundedFriendly(GameManager.I, owner, transform.position, 8f);
+            if (wounded == null || wounded.CurrentHp > wounded.MaxHpValue * 0.7f) return;
+
+            priestAt = Time.time + 1f;
+            mana -= 25f;
+            wounded.Heal(70f);
+            CombatFx.CreateBeamEffect(transform.position + Vector3.up * 1.4f,
+                                      wounded.Position + Vector3.up * 1f,
+                                      new Color(1f, 0.95f, 0.6f), 0.25f);
+            FloatingText.Spawn(wounded.Position + Vector3.up * 2f, "+70", new Color(0.5f, 1f, 0.5f));
         }
 
         // -------------------------------------------------------------------

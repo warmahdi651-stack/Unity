@@ -170,7 +170,7 @@ MonoBehaviour:
   mapSeed: 20020116
   spawnAiOpponent: 1
   startingWorkers: 5
-  startingHeroes: 1
+  startingHeroes: 0
   verbose: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

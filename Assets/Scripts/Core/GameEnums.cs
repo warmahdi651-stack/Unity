@@ -42,6 +42,8 @@ namespace RtsWarcraft
         Knight = 4,
         Paladin = 5,        // hero
         Archmage = 6,       // hero
+        Priest = 7,
+        Sorceress = 8,
 
         // ---- Horde ----
         Peon = 10,
@@ -105,6 +107,13 @@ namespace RtsWarcraft
         Stop = 61,
         Repair = 62,
         SelectAllWorkers = 63
+    }
+
+    public enum UpgradeId
+    {
+        None = 0,
+        Weapons = 1,
+        Armor = 2
     }
 
     public enum OrderType

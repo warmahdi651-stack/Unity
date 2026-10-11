@@ -161,6 +161,29 @@ ability value lives there.
 
 ---
 
+## Main menu, Android and the Human campaign tree
+
+* **Main menu** — booting the scene shows a Warcraft III style menu (painted
+  backdrop, golden title, Single Player / Options / Credits / Quit) while the
+  camera orbits the live map. *Single Player* starts the match with exactly
+  **one Town Hall and five workers**.
+* **Android** — touch is fully supported: one-finger tap selects / smart
+  commands, one-finger drag pans, pinch zooms, two-finger drag pans. Build the
+  APK with *File ▸ Build Settings ▸ Android ▸ Switch Platform* (install the
+  Android module in Unity Hub first); `ProjectSettings` already targets
+  ARM64/IL2CPP, min SDK 22, landscape.
+* **Alliance tree completed** — the Arcane Sanctum trains **Priests**
+  (auto-cast heal, slows nobody, keeps your army alive) and **Sorceresses**
+  (magic damage + slow on hit); the Blacksmith researches **Weapons / Armor**
+  upgrades (3 levels, army-wide); Knights now require a Blacksmith.
+
+> **Important when updating:** delete the old project folder before unzipping a
+> new build. `ProjectSettings/ProjectSettings.asset` now forces
+> `activeInputHandler: 0` (legacy input); a stale copy of the old settings is
+> what caused the *Input System* exceptions.
+
+---
+
 ## Verifying the project without Unity
 
 Unity cannot run in this repository's CI sandbox (no editor binary, no GPU, no
