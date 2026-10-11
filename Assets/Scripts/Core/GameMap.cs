@@ -31,9 +31,9 @@ namespace RtsWarcraft
         public const float Tile = GameData.TileSize;
 
         readonly float[,] heights;
-        readonly byte[,] blocked;      // 1 = permanently unwalkable (water / rock)
-        readonly byte[,] occupied;     // 1 = a building footprint sits here
-        readonly int[,] nodeAt;        // resource node index at tile, -1 for none
+        readonly byte[] blocked;       // 1 = permanently unwalkable (water / rock)
+        readonly byte[] occupied;      // 1 = a building footprint sits here
+        readonly int[] nodeAt;         // resource node index at tile, -1 for none
 
         public readonly List<ResourceNode> Nodes = new List<ResourceNode>();
 
@@ -42,14 +42,14 @@ namespace RtsWarcraft
         readonly int[] cameFrom;
         readonly byte[] state;         // 0 unvisited, 1 open, 2 closed
         readonly PriorityQueue open = new PriorityQueue();
-        readonly List<Vector2Int> pathScratch = new List<Vector2Int>();
+        readonly List<Vector3> pathScratch = new List<Vector3>();
 
         public GameMap(int seed)
         {
             heights = new float[Size, Size];
-            blocked = new byte[Size, Size];
-            occupied = new byte[Size, Size];
-            nodeAt = new int[Size, Size];
+            blocked = new byte[Size * Size];
+            occupied = new byte[Size * Size];
+            nodeAt = new int[Size * Size];
             gScore = new int[Size * Size];
             cameFrom = new int[Size * Size];
             state = new byte[Size * Size];
@@ -78,7 +78,7 @@ namespace RtsWarcraft
                     float h = noise[x, z] * 3.2f + detail[x, z] * 0.6f;
                     heights[x, z] = h;
                     bool border = x < 3 || z < 3 || x >= Size - 3 || z >= Size - 3;
-                    if (border || h > 3.35f) blocked[x, z] = 1;
+                    if (border || h > 3.35f) blocked[z * Size + x] = 1;
                 }
             }
 
@@ -136,7 +136,7 @@ namespace RtsWarcraft
                     if (d > radius) continue;
                     float w = Mathf.Clamp01(1f - (d - radius + 3f) / 3f);
                     heights[x, z] = Mathf.Lerp(heights[x, z], h, w);
-                    if (d <= radius - 2) blocked[x, z] = 0;
+                    if (d <= radius - 2) blocked[z * Size + x] = 0;
                 }
             }
         }

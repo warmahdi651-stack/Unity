@@ -77,4 +77,89 @@ print("cross-reference findings:", len(out))
 for f, i, kind, msg in out[:80]:
     print("  %s:%d  [%s] %s" % (f, i, kind, msg))
 
-sys.exit(1 if out else 0)
+
+# ===========================================================================
+#  pass 3 - array rank check:  declared  byte[,] x  must never be read as
+#  x[i], and declared byte[] y must never be read as y[a, b].
+# ===========================================================================
+
+def top_level_commas(expr):
+    depth = 0
+    n = 0
+    for ch in expr:
+        if ch in '([{':
+            depth += 1
+        elif ch in ')]}':
+            depth -= 1
+        elif ch == ',' and depth == 0:
+            n += 1
+    return n
+
+def bracket_expr(src, idx):
+    """Return the text between the brackets starting at src[idx]=='['."""
+    depth = 0
+    for j in range(idx, len(src)):
+        if src[j] == '[':
+            depth += 1
+        elif src[j] == ']':
+            depth -= 1
+            if depth == 0:
+                return src[idx + 1:j]
+    return ''
+
+array_ranks = {}
+for f in files:
+    src = open(f, encoding='utf8').read()
+    for m in re.finditer(r'(\[(?:,\s*)*\])\s*([a-z_][A-Za-z0-9_]*)\s*(?:=|;|,|\))', src):
+        # inner text of the declaration brackets: '[]' -> rank 1, '[,]' -> 2
+        rank = top_level_commas(m.group(1)[1:-1]) + 1
+        array_ranks.setdefault(m.group(2), rank)
+
+rank_problems = []
+for f in files:
+    src = open(f, encoding='utf8').read()
+    lines = src.split('\n')
+    pos = 0
+    for i, line in enumerate(lines, 1):
+        for m in re.finditer(r'(?<![A-Za-z0-9_\.])([a-z_][A-Za-z0-9_]*)\[', line):
+            name = m.group(1)
+            if name not in array_ranks:
+                continue
+            expr = bracket_expr(line, m.end() - 1)
+            if expr == '':
+                continue
+            used = top_level_commas(expr) + 1
+            if used != array_ranks[name]:
+                rank_problems.append((f, i, "RANK", "%s declared rank %d but indexed with %d" % (name, array_ranks[name], used)))
+
+# ===========================================================================
+#  pass 4 - List<T> generic misuse:  new List<A>(varOfListB)  and
+#  listOfA.Add(listOrWrongTypedThing) where types are both known and differ.
+# ===========================================================================
+
+list_types = {}
+for f in files:
+    src = open(f, encoding='utf8').read()
+    for m in re.finditer(r'\bList<([A-Za-z0-9_]+)>\s+([a-z_][A-Za-z0-9_]*)', src):
+        list_types.setdefault(m.group(2), m.group(1))
+
+generic_problems = []
+for f in files:
+    src = open(f, encoding='utf8').read()
+    lines = src.split('\n')
+    for i, line in enumerate(lines, 1):
+        for m in re.finditer(r'new\s+List<([A-Za-z0-9_]+)>\s*\(\s*([a-z_][A-Za-z0-9_]*)\s*\)', line):
+            elem, var = m.group(1), m.group(2)
+            have = list_types.get(var)
+            if have and have != elem:
+                generic_problems.append((f, i, "LIST-CTOR", "new List<%s>(%s) but %s is List<%s>" % (elem, var, var, have)))
+
+all_problems = out + rank_problems + generic_problems
+print("array-rank findings:", len(rank_problems))
+for f, i, kind, msg in rank_problems:
+    print("  %s:%d  [%s] %s" % (f, i, kind, msg))
+print("list-generic findings:", len(generic_problems))
+for f, i, kind, msg in generic_problems:
+    print("  %s:%d  [%s] %s" % (f, i, kind, msg))
+
+sys.exit(1 if all_problems else 0)

@@ -48,7 +48,6 @@ namespace RtsWarcraft
         public ResourceKind carriedKind;
         float harvestProgress;
         ResourceNode assignedNode;
-        bool returning;
 
         // ---- build ----
         BuildingController buildTarget;
@@ -221,14 +220,12 @@ namespace RtsWarcraft
                     break;
 
                 case OrderType.Harvest:
-                    returning = false;
                     assignedNode = current.node;
                     if (assignedNode != null && assignedNode.Depleted) { Advance(); return; }
                     if (assignedNode != null) SetPathTo(ApproachPoint(assignedNode.position, def.radius + 0.9f));
                     break;
 
                 case OrderType.ReturnResource:
-                    returning = true;
                     break;
 
                 case OrderType.AttackTarget:
@@ -680,10 +677,7 @@ namespace RtsWarcraft
                 }
 
                 if (carried >= def.carryCapacity || (n.Depleted && carried > 0))
-                {
-                    returning = true;
                     IssueOrder(Order.ReturnResource());
-                }
             }
         }
 
