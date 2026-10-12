@@ -169,6 +169,17 @@ namespace RtsWarcraft
             }
         }
 
+        /// <summary>Quaternius character FBX materials reference these skin
+        /// textures by name; assign them at runtime when the importer left
+        /// the slot empty so units are never flat grey.</summary>
+        static string UnitTexName(string model)
+        {
+            if (model == "knight") return "ClothedDarkSkin1";
+            if (model == "man") return "ClothedLightSkin1";
+            if (model == "woman") return "ClothedLightSkin2";
+            return null;
+        }
+
         static string BuildingModelName(BuildingId id)
         {
             switch (id)
@@ -603,11 +614,11 @@ namespace RtsWarcraft
         static Color TerrainColor(float h, int x, int z, int size)
         {
             bool border = x < 3 || z < 3 || x >= size - 3 || z >= size - 3;
-            if (border || h > 3.35f) return Rock;
+            if (border || h > 2.7f) return Rock;
             if (h < 0.05f) return DeepWater;
-            if (h < 0.30f) return WetSand;
-            if (h < 0.55f) return Color.Lerp(Sand, GrassLow, Mathf.Clamp01((h - 0.30f) / 0.25f));
-            if (h > 2.2f) return Color.Lerp(GrassHigh, Rock, Mathf.Clamp01((h - 2.2f) / 1.2f));
+            if (h < 0.34f) return WetSand;
+            if (h < 0.75f) return Color.Lerp(Sand, GrassLow, Mathf.Clamp01((h - 0.34f) / 0.41f));
+            if (h > 2.1f) return Color.Lerp(GrassHigh, Rock, Mathf.Clamp01((h - 2.1f) / 0.6f));
 
             // Fine deterministic speckle so the ground is not perfectly flat in colour.
             int n = (x * 73856093) ^ (z * 19349663);
@@ -779,13 +790,14 @@ namespace RtsWarcraft
 
             Vector3 s = def.visualScale;
 
-            GameObject model = PlaceModel(go.transform, UnitModelName(def.id), Vector3.zero, Quaternion.identity,
+            string umn = UnitModelName(def.id);
+            GameObject model = PlaceModel(go.transform, umn, Vector3.zero, Quaternion.identity,
                                           def.visualScale.y * (def.isHero ? 1.35f : 1.15f), "Model",
-                                          Color.Lerp(owner.color, Color.white, 0.85f));
+                                          Color.Lerp(owner.color, Color.white, 0.85f), UnitTexName(umn));
             if (model != null)
             {
                 RtsAnimator ra = model.AddComponent<RtsAnimator>();
-                ra.Init(UnitModelName(def.id));
+                ra.Init(umn);
 
                 Part(go.transform, ConeMesh(s.x * 0.16f, s.y * 0.22f, 5), Solid(owner.color),
                      new Vector3(0f, def.visualScale.y * (def.isHero ? 1.5f : 1.3f), 0f),
@@ -889,9 +901,28 @@ namespace RtsWarcraft
             bool isHall = def.isResourceDropoff;
             bool isFarm = def.supplyProvided > 0;
 
-            GameObject bModel = PlaceModelFit(go.transform, BuildingModelName(id), w, ModelBaseWidth(id), "colormap_ft");
+            string bmn = BuildingModelName(id);
+            // The Quaternius tower FBXs are vertex-coloured, not UV mapped to
+            // the Kenney colormap - give them a stone tint instead.
+            string btex = (bmn == "watchtower" || bmn == "pointytower") ? null : "colormap_ft";
+            GameObject bModel = PlaceModelFit(go.transform, bmn, w, ModelBaseWidth(id), btex);
             if (bModel != null)
             {
+                if (isTower)
+                {
+                    Renderer[] trs = bModel.GetComponentsInChildren<Renderer>();
+                    for (int ti = 0; ti < trs.Length; ti++)
+                    {
+                        Material[] tms = trs[ti].sharedMaterials;
+                        for (int tj = 0; tj < tms.Length; tj++)
+                        {
+                            Material tm = new Material(tms[tj]);
+                            tm.color = Color.Lerp(stone, owner.color, 0.15f);
+                            tms[tj] = tm;
+                        }
+                        trs[ti].sharedMaterials = tms;
+                    }
+                }
                 float bRingR = Mathf.Max(w, d) * 0.62f;
                 GameObject bRing = Part(go.transform, RingXZ(bRingR, bRingR * 0.86f),
                                         Transparent(GameData.SelectionGreen),

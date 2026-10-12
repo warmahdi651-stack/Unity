@@ -240,7 +240,7 @@ namespace RtsWarcraft
 
             // ---------- command card ----------
             RectTransform card = NewPanel("CommandCard", root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                                          new Vector2(-268f, 8f), new Vector2(268f, 168f));
+                                          new Vector2(-172f, 8f), new Vector2(172f, 170f));
             NewImage("BG", card, new Color(0.07f, 0.07f, 0.11f, 0.9f), false);
 
             // portrait + labels
@@ -293,9 +293,12 @@ namespace RtsWarcraft
             manaFill = NewFill(manaRow, new Color(0.25f, 0.45f, 1f));
             manaRow.gameObject.SetActive(false);
 
-            // ---------- button grid ----------
-            RectTransform grid = NewPanel("Grid", card, new Vector2(0f, 0f), new Vector2(0f, 1f),
-                                          new Vector2(346f, 8f), new Vector2(528f, 160f));
+            // ---------- command grid (bottom right) ----------
+            RectTransform gridPanel = NewPanel("CommandGrid", root, new Vector2(1f, 0f), new Vector2(1f, 0f),
+                                               new Vector2(-198f, 8f), new Vector2(-8f, 196f));
+            NewImage("BG", gridPanel, new Color(0.07f, 0.07f, 0.11f, 0.9f), false);
+            RectTransform grid = NewPanel("Grid", gridPanel, new Vector2(0f, 0f), new Vector2(0f, 1f),
+                                          new Vector2(6f, 6f), new Vector2(190f, 190f));
 
             for (int i = 0; i < CardSlots; i++)
             {
@@ -338,7 +341,7 @@ namespace RtsWarcraft
 
             // ---------- selection strip ----------
             RectTransform strip = NewPanel("SelectionStrip", root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                                           new Vector2(-268f, 180f), new Vector2(268f, 236f));
+                                           new Vector2(-267f, 178f), new Vector2(267f, 234f));
             NewImage("BG", strip, new Color(0.07f, 0.07f, 0.11f, 0.78f), false);
 
             for (int i = 0; i < StripSlots; i++)

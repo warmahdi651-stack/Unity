@@ -63,30 +63,111 @@ namespace RtsWarcraft
         //  Terrain generation
         // ===================================================================
 
+        public const float WaterLevel = 0.26f;
+
         void Generate(int seed)
         {
-            // Two layered value-noise octaves + a border of impassable rock.
+            // ---- designed battlefield -------------------------------------
+            //  Rolling grassland safely above the water line, a river that
+            //  runs along the anti-diagonal between the two starts (with a
+            //  wider lake pocket in the middle), two bridges crossing it on
+            //  the main attack axis, and rocky highlands that steer armies
+            //  towards those crossings.
             float[,] noise = new float[Size, Size];
             SampleNoise(noise, seed, 24f, 1.0f);
             float[,] detail = new float[Size, Size];
             SampleNoise(detail, seed * 7 + 13, 8f, 1.0f);
+            float[,] hills = new float[Size, Size];
+            SampleNoise(hills, seed * 3 + 5, 14f, 1.0f);
 
             for (int z = 0; z < Size; z++)
             {
                 for (int x = 0; x < Size; x++)
                 {
-                    float h = noise[x, z] * 3.2f + detail[x, z] * 0.6f;
+                    float h = 0.85f + noise[x, z] * 0.55f + detail[x, z] * 0.12f;
+                    float ridge = hills[x, z];
+                    if (ridge > 0.62f) h += (ridge - 0.62f) * 5.5f;   // rocky highlands
                     heights[x, z] = h;
                     bool border = x < 3 || z < 3 || x >= Size - 3 || z >= Size - 3;
-                    if (border || h > 3.35f) blocked[z * Size + x] = 1;
+                    if (border || h > 2.7f) blocked[z * Size + x] = 1;
                 }
             }
 
+            CarveRiver();
+            BuildBridges();
+
+            // Anything still under the water line is impassable water -
+            // ground units must never walk across a river bed.
+            for (int z = 0; z < Size; z++)
+                for (int x = 0; x < Size; x++)
+                    if (heights[x, z] < WaterLevel + 0.08f) blocked[z * Size + x] = 1;
+
             // Flatten the two starting bases so buildings always fit.
-            FlattenArea(new Vector2Int(16, 16), 9);      // Alliance (blue) start
-            FlattenArea(new Vector2Int(Size - 17, Size - 17), 9); // Horde (red) start
+            FlattenArea(new Vector2Int(16, 16), 10);      // Alliance (blue) start
+            FlattenArea(new Vector2Int(Size - 17, Size - 17), 10); // Horde (red) start
 
             PlaceResources();
+        }
+
+        float RiverCenterZ(int x)
+        {
+            // Anti-diagonal with a gentle deterministic wiggle.
+            float w = Mathf.Sin(x * 0.11f) * 3.2f + Mathf.Sin(x * 0.043f + 1.7f) * 2.4f;
+            return Size - x + w;
+        }
+
+        float RiverHalfWidth(int x)
+        {
+            // Wider in the middle: a small lake pocket around the centre.
+            float d = (x - Size * 0.5f) / 14f;
+            return 3.0f + 3.4f * Mathf.Exp(-d * d);
+        }
+
+        void CarveRiver()
+        {
+            for (int x = 4; x < Size - 4; x++)
+            {
+                float cz = RiverCenterZ(x);
+                float hw = RiverHalfWidth(x);
+                int z0 = Mathf.FloorToInt(cz - hw), z1 = Mathf.CeilToInt(cz + hw);
+                for (int z = z0; z <= z1; z++)
+                {
+                    if (!InBounds(x, z)) continue;
+                    float d = Mathf.Abs(z - cz);
+                    if (d > hw) continue;
+                    float t = Mathf.Clamp01(d / hw);
+                    heights[x, z] = Mathf.Lerp(-0.8f, WaterLevel - 0.06f, t * t);
+                    blocked[z * Size + x] = 1;
+                }
+            }
+        }
+
+        void BuildBridges()
+        {
+            // Main crossing in the middle of the map plus a second one down
+            // the river: both sit on the shortest lines between the two
+            // starts, which makes them natural choke points.
+            int[] crossings = { Size / 2, Size / 2 + 26 };
+            for (int c = 0; c < crossings.Length; c++)
+            {
+                int bx = crossings[c];
+                float cz = RiverCenterZ(bx);
+                float hw = RiverHalfWidth(bx);
+                int z0 = Mathf.FloorToInt(cz - hw) - 1, z1 = Mathf.CeilToInt(cz + hw) + 1;
+                for (int z = z0 - 1; z <= z1 + 1; z++)
+                {
+                    for (int t = -1; t <= 1; t++)
+                    {
+                        int x = bx + t;
+                        if (!InBounds(x, z)) continue;
+                        // Bridge deck plus raised approach tiles so a pond
+                        // can never block the entrance to a crossing.
+                        bool approach = z < z0 || z > z1;
+                        heights[x, z] = Mathf.Max(heights[x, z], approach ? 0.65f : 0.85f);
+                        blocked[z * Size + x] = 0;
+                    }
+                }
+            }
         }
 
         void SampleNoise(float[,] dst, int seed, float scale, float amplitude)
@@ -158,10 +239,12 @@ namespace RtsWarcraft
                 AddTreeCluster(bases[b], 9, 16, rnd);
             }
 
-            // Expansion mines in the middle of the map.
-            AddGoldMine(Size / 2, Size / 2, 2500);
-            AddGoldMine(Size / 2 + 14, Size / 2 - 12, 1400);
-            AddGoldMine(Size / 2 - 14, Size / 2 + 12, 1400);
+            // Expansion mines: one contested pair beside the crossings and
+            // one natural expansion behind each start.
+            AddGoldMine(Size / 2 - 10, Size / 2 - 10, 1800);
+            AddGoldMine(Size / 2 + 10, Size / 2 + 10, 1800);
+            AddGoldMine(Size / 2 - 30, Size / 2 - 26, 1500);
+            AddGoldMine(Size / 2 + 30, Size / 2 + 26, 1500);
 
             // Scatter trees / neutral clusters everywhere else.
             for (int i = 0; i < 130; i++)

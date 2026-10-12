@@ -317,3 +317,24 @@ than a structural one — the checks above are the strongest available offline.
 - UI scaled up: canvas reference resolution 1280x720, minimap 25% larger.
 - The HP/mana rows on the command card hide when nothing is selected (the
   stray dark bar is gone).
+
+### v1.8 - designed map, real water logic, character skins, HUD relayout
+
+Root causes fixed from the code (not guessed from screenshots):
+
+- **Flooded map**: terrain heights were centred on 0 (`noise*3.2`), so the
+  water plane at y=0.26 covered ~half the world. Terrain is now grassland
+  based at 0.85 with rocky highlands, and a *carved* river runs along the
+  anti-diagonal between the two starts with a small lake pocket mid-map.
+  Every tile below the water line is impassable - units can no longer walk
+  on river beds. Two bridges (mid-map and downriver) are the crossings and
+  natural choke points. Verified by a Python port of the generator:
+  84.8% walkable land, 5.7% water, both starts dry at h=1.2, all six gold
+  mines reachable, player <-> enemy path exists through the bridges.
+- **Grey units**: the knight/man/woman FBX materials had no texture linked.
+  `UnitTexName` now force-assigns the matching Quaternius skin texture at
+  runtime; the vertex-coloured tower FBXs get a stone tint instead of the
+  Kenney colormap (which they are not UV-mapped to).
+- **HUD relayout** (WC3-style): portrait/HP/mana card bottom-centre,
+  command button grid in its own panel bottom-right, selection strip above
+  the card, minimap bottom-left, resource bar on top.

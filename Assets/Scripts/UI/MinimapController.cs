@@ -66,8 +66,8 @@ namespace RtsWarcraft
                     bool blocked = !map.IsWalkableTile(tx, tz);
 
                     Color32 c;
-                    if (h > 3.35f) c = new Color32(96, 92, 88, 255);
-                    else if (h < 0.2f) c = new Color32(26, 86, 116, 255);
+                    if (h > 2.7f) c = new Color32(96, 92, 88, 255);
+                    else if (h < 0.34f) c = new Color32(26, 86, 116, 255);
                     else if (blocked) c = new Color32(24, 58, 28, 255);
                     else
                     {
