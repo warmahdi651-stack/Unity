@@ -1,1 +1,340 @@
-# Unity
+# RTS-Warcraft — a Warcraft III style RTS for Unity
+
+A complete real-time strategy game in the spirit of **Warcraft III**: two races,
+resource gathering, base building, unit training, heroes with spells, fog of
+war, a minimap and a computer opponent that attacks you in waves.
+
+Everything — terrain, units, buildings, effects, interface, minimap — is
+**generated procedurally at runtime**. The repository contains no binary art
+assets, so the project is small, diff-friendly and impossible to have a broken
+import.
+
+---
+
+## Install, step by step
+
+You only need to download **one** thing: Unity Hub. It then downloads the
+editor for you.
+
+1. **Download Unity Hub** — <https://unity.com/download> → *Download Unity Hub*
+   (`UnityHubSetup.exe` on Windows, `.dmg` on macOS). Install it.
+2. **Create a free account and sign in** inside Hub. A free **Unity Personal**
+   licence is enough — this project needs no paid module.
+3. **Install the editor:** Hub → *Installs* → **Install Editor** → pick the
+   newest **2022.3 LTS** (any 2022.3.x works; `ProjectVersion.txt` names
+   `2022.3.62f1`, and if your patch differs Unity simply asks which installed
+   version to open it with — choose yours). In the module list you need
+   **nothing extra** — no Android/iOS/WebGL module is required to just play.
+4. **Get the project**, either way:
+   * **Git:** `git clone -b arena/0f62c8dc-unity https://github.com/warmahdi651-stack/Unity.git`
+   * **ZIP:** <https://github.com/warmahdi651-stack/Unity/archive/refs/heads/arena/0f62c8dc-unity.zip>
+     → unzip it anywhere (avoid paths with non-ASCII characters).
+5. **Open it:** Hub → *Projects* → **Add** → *Add project from disk* → select the
+   unzipped folder (the one containing `Assets/`, `Packages/`, `ProjectSettings/`).
+6. **Open the scene** `Assets/Scenes/Main.unity` in the Project window.
+7. Press **Play** (the ▶ button, or `Ctrl+P`).
+
+The first open takes a minute while Unity imports the project and resolves the
+packages in `Packages/manifest.json`.
+
+That is the entire setup. The scene contains a single GameObject
+(`GameBootstrap`); at runtime it builds the camera, the sun, the 128×128 map,
+the resource nodes, both players, all systems and the whole interface.
+
+### v1.4 - feel & feedback pass
+
+- Synthesised sound effects (no audio files): button clicks, harvest chops,
+  gold delivery, combat impacts, deaths, training/construction chimes and
+  error buzzes - generated into AudioClips at startup.
+- Units now walk with a step bob and swing their weapon/staff/bow on attack.
+- Buildings grow in while under construction.
+- The unit card's HP/mana bars are live (the old empty maroon bar is gone).
+- Minimap shows a white rectangle around the camera's current view.
+
+### v1.3 - graphics & polish pass
+
+- Real water plane with an animated shader, gradient sky dome, warm sun +
+  atmospheric fog, sandy shorelines and grass colour patches.
+- Conifer trees with two leaf layers and per-tree size/colour variance,
+  rocky gold mines with gold nuggets, town halls with flag banners,
+  stone walls with faction-coloured roofs.
+- Starting yard is cleared of trees around each Town Hall.
+- HUD: full readable button names with hover cost tooltips, portrait glyph,
+  health bars re-anchored so they sit on their units, font lookup that never
+  logs errors on Unity 2022.1.
+
+### Copying into a project created in Unity Hub
+
+You do **not** need the *3D Mobile* template — a template only decides the
+*initial* files, and this zip already ships every file the game needs
+(including Android player settings).  Android support comes from the
+**Android Build Support module**, not from a template.
+
+If you still prefer to create an empty project in Hub first:
+
+1. In Hub choose the **3D (Built-In Render Pipeline)** template (my shaders are
+   written for the built-in pipeline).  *3D Mobile* also works, but it enables
+   the new Input System and URP, so step 3 must overwrite those settings.
+2. Create the project anywhere, then **close Unity**.
+3. In the project folder **replace** these three folders with the ones from the
+   zip: `Assets/`, `Packages/`, `ProjectSettings/`.  Delete the template's
+   versions first - do not merge.
+4. Open the project in Hub again, open `Assets/Scenes/Main.unity`, press Play.
+
+### If something goes wrong
+
+| Symptom | Fix |
+| --- | --- |
+| Hub says the editor version is missing | Click it and install 2022.3 LTS, or pick any installed 2022.3.x when prompted. |
+| Console shows shader warnings | The fog uses `Assets/Shaders/FogOfWar.shader`; it is a plain unlit CG shader and works on the built-in pipeline. Warnings are harmless. |
+| Screen is all blue | The scene is open but you have not pressed Play — the world is built at runtime. |
+| Units do not respond | Click on one of *your* blue units first, then right-click. |
+
+> **Render pipeline:** built-in. **Input:** legacy Input Manager.
+> **Packages:** only `com.unity.ugui` plus the default engine modules — see
+> `Packages/manifest.json`. Nothing to buy, nothing to import.
+
+### Inspector options on `GameBootstrap`
+
+| Field | Meaning |
+| --- | --- |
+| `mapSeed` | Deterministic map layout. Change it for a different map. |
+| `spawnAiOpponent` | Play against the Horde AI. Turn off for a sandbox. |
+| `startingWorkers` | Workers each player begins with (1–12). |
+| `startingHeroes` | Give every player one hero at the start. |
+| `verbose` | Log bootstrap info and print tutorial messages in game. |
+
+---
+
+## Controls
+
+| Input | Action |
+| --- | --- |
+| **Left drag** | Box-select your units |
+| **Left click** | Select a unit / building / resource node |
+| **Shift + click** | Add to / remove from the selection |
+| **Double click** a unit | Select every unit of that type you own |
+| **Right click** ground | Move |
+| **Right click** enemy | Attack it |
+| **Right click** mine / tree | Send workers to harvest |
+| **Right click** own building | Repair it (workers) or walk to it |
+| **Middle click** with a building selected | Set the rally point |
+| **A**, then left click | Attack-move |
+| **S** / **H** | Stop / Hold position |
+| **Ctrl + 0…9** / **0…9** | Assign / recall control groups (**Alt+number** also centres the camera) |
+| **F1 / F2 / F3** | Select all military / all workers / idle workers |
+| **Space** | Centre the camera on the selection |
+| **WASD**, arrow keys, screen edge | Pan the camera (`A` pans only with the left arrow — `A` is attack-move) |
+| **Mouse wheel** | Zoom |
+| **Q / E**, **R** | Rotate the camera, reset rotation |
+| **Middle drag** | Pan by dragging |
+| **+ / −**, **P** | Game speed up / down, pause |
+| **Esc** | Cancel placement, or clear the selection |
+
+Select a **worker** to get the build menu in the command card; click a building
+icon, move the ghost to a green spot and click to place. Select a **hero** to
+get its spells (`Q` / `W` hotkeys are shown on the buttons).
+
+---
+
+## What is in the box
+
+### Races
+
+| Alliance (blue) | Horde (red) |
+| --- | --- |
+| Peasant (worker) | Peon (worker) |
+| Footman, Archer, Knight | Grunt, Troll Axethrower, Ogre |
+| **Paladin** — Holy Light, Divine Shield | **Blademaster** — Critical Strike, Wind Walk |
+| **Archmage** — Blizzard, Water Elemental | **Far Seer** — Chain Lightning, Feral Spirit |
+| Town Hall, Farm, Barracks, Lumber Mill, Blacksmith, Guard Tower, Altar of Kings, Arcane Sanctum | Great Hall, Burrow, Troll Hut, War Mill, Stronghold, Watch Tower, Altar of Storms, Spirit Lodge |
+
+### Systems
+
+* **Economy** — gold mines (5 workers per mine) and trees, 10 resources per
+  carry, drop-off at the Town Hall / Great Hall, farms supply food up to 90.
+* **Construction** — workers path to the site, the footprint is reserved on the
+  grid, progress is shared between builders, repair costs 2 % of the base cost
+  per tick.
+* **Combat** — Warcraft-style armour (`damage × 0.94^armor`), damage types
+  (normal / piercing / siege / magic) with a modifier table, ranged projectiles
+  with an arc, tower defences, auto-acquisition at 10 units.
+* **Heroes** — 10 levels, strength / agility / intelligence, mana, cooldowns,
+  experience from nearby kills, passives and active spells.
+* **Pathfinding** — A\* on the tile grid with octile heuristic, no corner
+  cutting, line-of-sight string pulling, nearest-walkable fallback and local
+  separation steering so groups spread out instead of stacking.
+* **Fog of war** — a 64×64 visibility grid baked into a texture and drawn with
+  the included `Assets/Shaders/FogOfWar.shader`; unexplored / explored /
+  visible states, enemy units hidden unless revealed.
+* **Interface** — resource bar, command card with cooldowns, 12-slot selection
+  strip, message log, drag box, floating damage numbers, world-space health and
+  mana bars, clickable minimap, victory / defeat screen.
+* **AI opponent** — grows the economy to 16 workers, builds farms, a barracks
+  and an altar, trains a mixed army, retreats wounded units and attacks in
+  escalating waves.
+
+---
+
+## Project layout
+
+```
+Assets/
+  Scenes/Main.unity          the only scene (one bootstrap object)
+  Shaders/FogOfWar.shader    the fog mask shader
+  Scripts/
+    Core/       GameBootstrap, GameManager, GameMap, GameData, GameEnums,
+                RTSPlayer, OrderSystem, SelectionManager, PlacementController,
+                RTSCameraController, EnemyAI, RTSGameUtility
+    Units/      UnitController
+    Buildings/  BuildingController
+    Combat/     CombatMath, AbilitySystem, ProjectileController, CombatFx
+    World/      WorldFactory, FogOfWar, SelectableMarker
+    UI/         HUDController, MinimapController, FloatingText
+ProjectSettings/             editor version + build scene list
+Packages/manifest.json       ugui + engine modules only
+Tools/                       offline verification (see below)
+```
+
+`GameData.cs` is the single tuning file: every unit cost, stat, build time and
+ability value lives there.
+
+---
+
+## Main menu, Android and the Human campaign tree
+
+* **Main menu** — booting the scene shows a Warcraft III style menu (painted
+  backdrop, golden title, Single Player / Options / Credits / Quit) while the
+  camera orbits the live map. *Single Player* starts the match with exactly
+  **one Town Hall and five workers**.
+* **Android** — touch is fully supported: one-finger tap selects / smart
+  commands, one-finger drag pans, pinch zooms, two-finger drag pans. Build the
+  APK with *File ▸ Build Settings ▸ Android ▸ Switch Platform* (install the
+  Android module in Unity Hub first); `ProjectSettings` already targets
+  ARM64/IL2CPP, min SDK 22, landscape.
+* **Alliance tree completed** — the Arcane Sanctum trains **Priests**
+  (auto-cast heal, slows nobody, keeps your army alive) and **Sorceresses**
+  (magic damage + slow on hit); the Blacksmith researches **Weapons / Armor**
+  upgrades (3 levels, army-wide); Knights now require a Blacksmith.
+
+> **Important when updating:** delete the old project folder before unzipping a
+> new build. `ProjectSettings/ProjectSettings.asset` now forces
+> `activeInputHandler: 0` (legacy input); a stale copy of the old settings is
+> what caused the *Input System* exceptions.
+
+---
+
+## Verifying the project without Unity
+
+Unity cannot run in this repository's CI sandbox (no editor binary, no GPU, no
+access to `download.unity3d.com`), so the project ships its own offline checks:
+
+```bash
+pip install tree_sitter tree_sitter_c_sharp pyyaml
+bash Tools/check_all.sh
+```
+
+That runs four passes:
+
+1. **`Tools/cs_symbols.py`** — builds a symbol table (types, members, statics)
+   from every `.cs` file with a real C# grammar.
+2. **tree-sitter parse** — all 24 scripts must parse with zero `ERROR` nodes.
+3. **`Tools/cs_xref.py`** — every `Type.Member` access resolves to a member that
+   actually exists *and* is static where it is used that way; every
+   `new Type { field = … }` initialiser only sets real fields.
+4. **`Tools/validate_project.py`** — every asset has a `.meta` with a unique
+   GUID, every Unity YAML document parses, every `{fileID: n}` reference
+   resolves, and the `MonoBehaviour` in `Main.unity` points at a real script
+   GUID with serialized fields that match the script's public fields.
+
+Current result:
+
+```
+types: 44
+parsed 24 files, 0 with syntax errors
+cross-reference findings: 0
+assets with .meta: 26, unique guids: 26
+OK - no structural problems found.
+ALL CHECKS PASSED
+```
+
+**What this does *not* prove:** it is not a compile and not a play test. Unity's
+own C# compiler, shader compiler and runtime behaviour have not been executed
+here. If anything is off, it will be an API-signature or shader detail rather
+than a structural one — the checks above are the strongest available offline.
+
+---
+
+## Ideas for extending it
+
+* Creep camps and neutral items (there is a hook in
+  `GameBootstrap.SpawnStartingExtras`).
+* Upgrades in the Blacksmith / Stronghold (`GameData` already has the buildings).
+* Air units — the combat maths is 2-D by distance, so adding a flyer flag is
+  mostly a pathfinding and targeting change.
+* Multiplayer via `Unity.Networking` — the simulation is already driven by one
+  `float dt` per tick through `GameManager.gameSpeed`.
+* Real art: `WorldFactory` is the only place geometry is created, so swapping a
+  procedural mesh for a prefab is a local change.
+
+### v1.5 - real 3D models & recorded sound (CC0)
+
+- Real low-poly 3D models by Kenney (CC0): characters for every unit,
+  modular medieval buildings composed offline into single meshes
+  (town hall with banners & corner pillars, barracks, farm with stall,
+  lumber mill with windmill, blacksmith, altar, sanctum, guard tower),
+  trees, rocks and a gold-mine rock pile with nuggets.
+  Procedural primitives remain as an automatic fallback.
+- Recorded CC0 sound effects (Kenney UI/RPG/Impact packs + artisticdude's
+  RPG Sound Pack via the Soundix collection): button clicks, harvest chops,
+  coin delivery, sword swings, metal impacts, bells, monster death, hammer
+  building ticks - synthesised versions kept as fallback.
+- HUD portraits now use Kenney's Medieval RTS sprite art per unit/building.
+- Assets converted from Kenney GLBs with Tools/glb2obj.py and composed with
+  Tools/compose_models.py (both kept in the repo).
+- Credits: Kenney (kenney.nl, CC0), artisticdude, ObsydianX collections.
+
+### v1.6 - animated heroes, distance-based audio, fixes
+
+- Units are now RIGGED ANIMATED characters (Quaternius, CC0): armoured
+  knight for fighters, clothed man for workers/archers/priests, woman for
+  casters. RtsAnimator plays walk/idle/attack/death clips automatically.
+- Guard towers use Quaternius' medieval WatchTower/PointyTower meshes.
+- Audio is distance-attenuated: battles far across the map no longer fill
+  your speakers (PlayAt with 38-unit falloff).
+- Fixed: the selection drag box could remain stuck on screen; it now also
+  hides whenever no mouse button is held.
+- Trees tinted to a deeper forest green; faction tint on characters is
+  subtler so models keep their painted look.
+
+### v1.7 - flooded base, untextured models, small UI fixes
+
+- Starting plateaus are now forced to height >= 1.2 (well above the water
+  line, which was also lowered to 0.26) - no more underwater bases.
+- OBJ model materials get their colormap assigned at runtime when the
+  importer left them untextured (white/pink buildings are gone); the
+  Quaternius character skin textures ship next to their FBX files.
+- UI scaled up: canvas reference resolution 1280x720, minimap 25% larger.
+- The HP/mana rows on the command card hide when nothing is selected (the
+  stray dark bar is gone).
+
+### v1.8 - designed map, real water logic, character skins, HUD relayout
+
+Root causes fixed from the code (not guessed from screenshots):
+
+- **Flooded map**: terrain heights were centred on 0 (`noise*3.2`), so the
+  water plane at y=0.26 covered ~half the world. Terrain is now grassland
+  based at 0.85 with rocky highlands, and a *carved* river runs along the
+  anti-diagonal between the two starts with a small lake pocket mid-map.
+  Every tile below the water line is impassable - units can no longer walk
+  on river beds. Two bridges (mid-map and downriver) are the crossings and
+  natural choke points. Verified by a Python port of the generator:
+  84.8% walkable land, 5.7% water, both starts dry at h=1.2, all six gold
+  mines reachable, player <-> enemy path exists through the bridges.
+- **Grey units**: the knight/man/woman FBX materials had no texture linked.
+  `UnitTexName` now force-assigns the matching Quaternius skin texture at
+  runtime; the vertex-coloured tower FBXs get a stone tint instead of the
+  Kenney colormap (which they are not UV-mapped to).
+- **HUD relayout** (WC3-style): portrait/HP/mana card bottom-centre,
+  command button grid in its own panel bottom-right, selection strip above
+  the card, minimap bottom-left, resource bar on top.
